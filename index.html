@@ -23,12 +23,12 @@
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-    <!-- Firebase SDK dengan Fail-Safe Handler -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <!-- Firebase SDK Compat Version (Anti-Freeze & Anti-CORS) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyA6_tTvQiXfG1ocW03SS_ZjlWrEQXAaE98",
             authDomain: "sikemasku.firebaseapp.com",
@@ -41,24 +41,16 @@
         };
 
         try {
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getDatabase(app);
-
-            window.fbAuth = auth;
-            window.fbDb = db;
-            window.fbRef = ref;
-            window.fbSet = set;
-            window.fbGet = get;
-            window.fbChild = child;
-            window.fbSignIn = signInWithEmailAndPassword;
-            window.fbSignUp = createUserWithEmailAndPassword;
-            window.fbSignOut = signOut;
-            window.fbOnAuth = onAuthStateChanged;
-            window.fbResetPass = sendPasswordResetEmail;
-            window.fbIsReady = true;
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                window.fbAuth = firebase.auth();
+                window.fbDb = firebase.database();
+                window.fbIsReady = true;
+            } else {
+                window.fbIsReady = false;
+            }
         } catch (e) {
-            console.warn("Firebase CDN offline/lambat, mengaktifkan mode emergency.", e);
+            console.warn("Firebase CDN lambat, mengaktifkan mode emergency.", e);
             window.fbIsReady = false;
         }
     </script>
@@ -115,7 +107,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans">
 
-    <!-- TAMPILAN HALAMAN DEPAN / LOGIN -->
+    <!-- HALAMAN LOGIN / MASUK -->
     <div id="landingScreen" class="min-h-screen flex flex-col justify-between p-4 bg-gradient-to-br from-sky-900 via-sky-800 to-slate-900 text-white no-print">
         <div class="max-w-md mx-auto w-full my-auto py-6">
             <div class="text-center space-y-3 mb-6">
@@ -248,7 +240,7 @@
                     </button>
                 </div>
 
-                <!-- KARTU IDENTITAS GURU / AKUN -->
+                <!-- KARTU IDENTITAS GURU -->
                 <div class="card-identity-box bg-white rounded-2xl p-4 shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs no-print">
                     <div class="flex items-center space-x-3 border-b sm:border-b-0 sm:border-r border-slate-200 pb-3 sm:pb-0 pr-0 sm:pr-4">
                         <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0 text-lg">
@@ -280,7 +272,7 @@
                             <span class="px-3 py-1 bg-sky-800 text-sky-200 rounded-xl text-xs font-bold" id="hmTodayDate">-</span>
                         </div>
 
-                        <!-- STATISTIK GABUNGAN SEKOLAH -->
+                        <!-- STATISTIK GABUNGAN -->
                         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
                             <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
                                 <span class="text-[10px] font-bold text-sky-200 block uppercase">TOTAL MURID</span>
@@ -305,7 +297,7 @@
                         </div>
                     </div>
 
-                    <!-- FITUR UTAMA: PEMILIH GURU & INSPEKSI DATA MANDIRI -->
+                    <!-- PEMILIH GURU -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4">
                         <div class="border-b pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <div>
@@ -315,7 +307,6 @@
                                 <p class="text-[11px] text-slate-500">Pilih nama guru di bawah ini untuk melihat dan mencetak rekapitulasi atau jurnal perkembangannya secara terpisah.</p>
                             </div>
                             
-                            <!-- DROPDOWN PEMILIH GURU -->
                             <div class="w-full sm:w-72">
                                 <label class="block text-[10px] font-bold text-sky-900 uppercase mb-1">Pilih Guru / Kelas</label>
                                 <select id="hmTeacherSelector" onchange="renderHeadmasterTeacherDetail()" class="w-full bg-sky-50 border border-sky-300 text-sky-900 font-extrabold rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-sky-500">
@@ -324,10 +315,7 @@
                             </div>
                         </div>
 
-                        <!-- PANEL HASIL AUDIT GURU TERPILIH -->
                         <div id="hmTeacherDetailArea" class="hidden space-y-4">
-                            
-                            <!-- METADATA GURU DIBUKA -->
                             <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
                                 <div>
                                     <span class="text-[10px] font-bold text-slate-400 uppercase">GURU / PENGAJAR AKTIF</span>
@@ -344,15 +332,10 @@
                                 </div>
                             </div>
 
-                            <!-- TERPISAH 1: BLOK TABEL REKAP PRESENSI -->
                             <div class="border rounded-2xl p-3 overflow-x-auto space-y-2 bg-white" id="hmMonthlyPrintBlock">
-                                <h5 class="font-bold text-xs text-slate-700 flex items-center no-print">
-                                    <i class="fa-solid fa-table-cells text-sky-600 mr-1.5"></i> Rekapitulasi Presensi Bulanan Guru Terpilih
-                                </h5>
-                                
                                 <div id="hmPrintMonthlyArea">
                                     <div class="hidden print:block text-center border-b border-slate-400 pb-2 mb-3 space-y-1">
-                                        <h1 class="font-black text-base uppercase tracking-wider text-slate-900" id="hmPrintMonthlyTitle">REKAPITULASI PRESENSI - [KELAS]</h1>
+                                        <h1 class="font-black text-base uppercase tracking-wider text-slate-900" id="hmPrintMonthlyTitle">REKAPITULASI PRESENSI</h1>
                                         <h2 class="font-extrabold text-sm uppercase text-slate-800" id="hmPrintMonthlySchool">SLBN 1 KULON PROGO</h2>
                                         <p class="text-xs text-slate-600 font-semibold">Periode Bulan: <span id="hmPrintMonthPeriod">-</span></p>
                                     </div>
@@ -363,32 +346,10 @@
                                             <tbody id="hmMonthlyTableBody" class="divide-y border-slate-200"></tbody>
                                         </table>
                                     </div>
-
-                                    <div class="hidden print:grid grid-cols-2 gap-8 mt-6 text-xs font-bold text-center print-footer">
-                                        <div>
-                                            <p class="text-[10px] font-normal">Mengetahui,</p>
-                                            <p>Kepala SLBN 1 Kulon Progo</p>
-                                            <br><br><br>
-                                            <p class="underline" id="hmPrintHMName"></p>
-                                            <p class="text-[10px] font-normal" id="hmPrintHMNip"></p>
-                                        </div>
-                                        <div>
-                                            <p class="text-[10px] font-normal" id="hmPrintTodayDate"></p>
-                                            <p>Guru Kelas / Mapel</p>
-                                            <br><br><br>
-                                            <p class="underline" id="hmPrintTRName"></p>
-                                            <p class="text-[10px] font-normal" id="hmPrintTRNip"></p>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
-                            <!-- TERPISAH 2: BLOK JURNAL PERKEMBANGAN -->
                             <div class="border rounded-2xl p-3 space-y-2 bg-white" id="hmSensoryPrintBlock">
-                                <h5 class="font-bold text-xs text-slate-700 flex items-center no-print">
-                                    <i class="fa-solid fa-book text-amber-600 mr-1.5"></i> Jurnal Perkembangan Siswa Dari Guru Terpilih
-                                </h5>
-                                
                                 <div id="hmPrintSensoryArea">
                                     <div class="hidden print:block text-center border-b border-slate-400 pb-3 mb-6 space-y-1">
                                         <h1 class="font-black text-lg uppercase tracking-wider text-slate-900" id="hmPrintSensoryTitle">LAPORAN JURNAL PERKEMBANGAN SISWA</h1>
@@ -397,26 +358,8 @@
                                     </div>
 
                                     <div id="hmSensoryNotesList" class="space-y-3"></div>
-
-                                    <div class="hidden print:grid grid-cols-2 gap-8 mt-12 text-xs font-bold text-center print-footer">
-                                        <div>
-                                            <p class="text-[10px] font-normal">Mengetahui,</p>
-                                            <p>Kepala SLBN 1 Kulon Progo</p>
-                                            <br><br><br>
-                                            <p class="underline" id="hmSensoryHMName"></p>
-                                            <p class="text-[10px] font-normal" id="hmSensoryHMNip"></p>
-                                        </div>
-                                        <div>
-                                            <p class="text-[10px] font-normal" id="hmSensoryTodayDate"></p>
-                                            <p>Guru Kelas / Mapel</p>
-                                            <br><br><br>
-                                            <p class="underline" id="hmSensoryTRName"></p>
-                                            <p class="text-[10px] font-normal" id="hmSensoryTRNip"></p>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
-
                         </div>
 
                         <div id="hmNoTeacherPlaceholder" class="text-center py-8 border border-dashed rounded-2xl text-xs text-slate-400">
@@ -424,7 +367,6 @@
                         </div>
                     </div>
 
-                    <!-- RINGKASAN STATUS PENGISIAN ALL GURU -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
                         <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center">
                             <i class="fa-solid fa-list-check text-sky-700 mr-2"></i> Status Pengisian Presensi Harian Seluruh Guru Hari Ini
@@ -526,10 +468,9 @@
                         </div>
                     </div>
 
-                    <!-- AREA TABEL CETAK REKAP BULANAN GURU -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 overflow-x-auto print-area">
                         <div class="hidden print:block text-center border-b border-slate-400 pb-2 mb-3 space-y-1">
-                            <h1 class="font-black text-base uppercase tracking-wider text-slate-900" id="printMonthlyTitle">REKAPITULASI PRESENSI - [NAMA KELAS]</h1>
+                            <h1 class="font-black text-base uppercase tracking-wider text-slate-900" id="printMonthlyTitle">REKAPITULASI PRESENSI</h1>
                             <h2 class="font-extrabold text-sm uppercase text-slate-800" id="printMonthlySchool">SLBN 1 KULON PROGO</h2>
                             <p class="text-xs text-slate-600 font-semibold">Periode Bulan: <span id="printMonthPeriod">-</span></p>
                         </div>
@@ -538,23 +479,6 @@
                             <thead class="bg-slate-100 font-bold text-slate-700"><tr id="daysHeaderRow"></tr></thead>
                             <tbody id="monthlyTableBody" class="divide-y border-slate-200"></tbody>
                         </table>
-
-                        <div class="hidden print:grid grid-cols-2 gap-8 mt-6 text-xs font-bold text-center print-footer">
-                            <div>
-                                <p class="text-[10px] font-normal">Mengetahui,</p>
-                                <p id="printMonthlyHeadmasterLabel">Kepala Sekolah</p>
-                                <br><br><br>
-                                <p class="underline" id="printHeadmasterName"></p>
-                                <p class="text-[10px] font-normal" id="printHeadmasterNip"></p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] font-normal" id="printDateToday"></p>
-                                <p id="printMonthlyTeacherLabel">Guru Kelas / Mapel</p>
-                                <br><br><br>
-                                <p class="underline" id="printTeacherName"></p>
-                                <p class="text-[10px] font-normal" id="printTeacherNip"></p>
-                            </div>
-                        </div>
                     </div>
                 </section>
 
@@ -580,40 +504,14 @@
                             </button>
                         </div>
 
-                        <!-- AREA CETAK JURNAL PERKEMBANGAN GURU -->
                         <div class="print-area">
-                            <div class="hidden print:block text-center border-b border-slate-400 pb-3 mb-6 space-y-1">
-                                <h1 class="font-black text-lg sm:text-xl uppercase tracking-wider text-slate-900" id="printSensoryTitle">LAPORAN JURNAL PERKEMBANGAN SISWA - [NAMA KELAS]</h1>
-                                <h2 class="font-extrabold text-sm sm:text-base uppercase text-slate-800" id="printSensorySchool">SLBN 1 KULON PROGO</h2>
-                                <p class="text-xs text-slate-600 font-semibold">Periode Bulan: <span id="printSensoryMonth">-</span></p>
-                            </div>
-
                             <div id="monthlyNotesList" class="space-y-4"></div>
-
-                            <div class="hidden print:grid grid-cols-2 gap-8 mt-12 text-xs font-bold text-center print-footer">
-                                <div>
-                                    <p class="text-[10px] font-normal">Mengetahui,</p>
-                                    <p id="printSensoryHeadmasterLabel">Kepala Sekolah</p>
-                                    <br><br><br>
-                                    <p class="underline" id="printSensoryHMName"></p>
-                                    <p class="text-[10px] font-normal" id="printSensoryHMNip"></p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-normal" id="printSensoryDateToday"></p>
-                                    <p id="printSensoryTeacherLabel">Guru Kelas / Mapel</p>
-                                    <br><br><br>
-                                    <p class="underline" id="printSensoryTRName"></p>
-                                    <p class="text-[10px] font-normal" id="printSensoryTRNip"></p>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- TAB 4: PENGATURAN & IMPOR JSON / TARIK DATA CLOUD -->
+                <!-- TAB 4: PENGATURAN & JSON -->
                 <section id="tab-settings" class="tab-content space-y-4">
-                    
-                    <!-- FITUR TARIK DATA DARI WALI KELAS -->
                     <div class="bg-gradient-to-br from-sky-800 via-sky-900 to-slate-900 text-white rounded-2xl shadow-md p-4 space-y-3 border border-sky-700">
                         <div class="flex items-center justify-between border-b border-sky-700 pb-2">
                             <h3 class="font-black text-xs sm:text-sm text-sky-200 flex items-center">
@@ -621,15 +519,12 @@
                             </h3>
                             <span class="px-2 py-0.5 bg-sky-700 text-sky-100 rounded text-[10px] font-bold">Fitur Guru Mapel</span>
                         </div>
-                        <p class="text-[11px] text-sky-100/90 leading-relaxed">
-                            Khusus Guru Mata Pelajaran/Keterampilan: Anda dapat memilih nama kelas sasaran di bawah untuk menyinkronkan seluruh daftar siswa dari Wali Kelas secara instan tanpa perlu mengetik manual.
-                        </p>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pt-1">
                             <div class="sm:col-span-8">
                                 <label class="block text-[10px] font-bold text-sky-200 uppercase mb-1">Pilih Kelas / Rombel Sasaran</label>
                                 <select id="cloudClassPullSelector" class="w-full bg-slate-800 border border-sky-600 text-white font-bold rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-sky-400">
-                                    <option value="">-- Memuat Daftar Kelas Sekolah... --</option>
+                                    <option value="">-- Memuat Daftar Kelas... --</option>
                                 </select>
                             </div>
                             <div class="sm:col-span-4">
@@ -637,30 +532,6 @@
                                     <i class="fa-solid fa-sync"></i>
                                     <span>Tarik Data Murid</span>
                                 </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- IMPOR FILE JSON CADANGAN -->
-                    <div class="bg-gradient-to-br from-amber-600 via-amber-700 to-slate-900 text-white rounded-2xl shadow-sm p-4 space-y-3">
-                        <h3 class="font-bold text-xs flex items-center">
-                            <i class="fa-solid fa-file-import text-amber-200 mr-2 text-sm"></i> Upload / Sync File JSON Cadangan (Pilihan / Opsional)
-                        </h3>
-                        <p class="text-[11px] text-amber-100/90 leading-relaxed">
-                            Gunakan tombol di bawah jika Anda ingin memuat file JSON cadangan secara manual.
-                        </p>
-                        <input type="file" id="importJsonInput" accept=".json,application/json" class="block w-full text-xs text-slate-200 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-white file:text-amber-900 hover:file:bg-amber-50 cursor-pointer">
-                    </div>
-
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
-                        <h3 class="font-bold text-slate-800 text-xs border-b pb-2">Logo Sekolah</h3>
-                        <div class="flex items-center space-x-4">
-                            <div class="w-16 h-16 border rounded-2xl bg-slate-50 p-1 flex items-center justify-center overflow-hidden shrink-0" id="previewLogoBox">
-                                <i class="fa-solid fa-graduation-cap text-slate-400 text-2xl"></i>
-                            </div>
-                            <div class="space-y-1.5 text-xs">
-                                <label class="block font-bold text-slate-600">Unggah Gambar Logo Baru</label>
-                                <input type="file" id="logoFileInput" accept="image/*" onchange="handleLogoUpload(event)" class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-sky-50 file:text-sky-700">
                             </div>
                         </div>
                     </div>
@@ -681,16 +552,8 @@
                                 <input type="text" id="cfgTeacherName" placeholder="Nama Lengkap & Gelar Guru" class="w-full border rounded-xl px-3 py-1.5 bg-slate-50 font-semibold">
                             </div>
                             <div>
-                                <label class="block font-bold text-slate-600 mb-1">NIP Guru</label>
-                                <input type="text" id="cfgTeacherNip" placeholder="Nomor Induk Pegawai Guru" class="w-full border rounded-xl px-3 py-1.5 bg-slate-50 font-semibold">
-                            </div>
-                            <div>
                                 <label class="block font-bold text-slate-600 mb-1">Nama Kepala Sekolah</label>
                                 <input type="text" id="cfgHeadmasterName" placeholder="Nama Lengkap & Gelar Kepala Sekolah" class="w-full border rounded-xl px-3 py-1.5 bg-slate-50 font-semibold">
-                            </div>
-                            <div>
-                                <label class="block font-bold text-slate-600 mb-1">NIP Kepala Sekolah</label>
-                                <input type="text" id="cfgHeadmasterNip" placeholder="Nomor Induk Pegawai Kepala Sekolah" class="w-full border rounded-xl px-3 py-1.5 bg-slate-50 font-semibold">
                             </div>
                         </div>
                         <button onclick="saveSchoolConfigToStorage()" class="px-4 py-2 bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold rounded-xl shadow transition">
@@ -700,23 +563,12 @@
 
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4">
                         <div class="border-b pb-3 flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-2">
-                                <i class="fa-solid fa-users text-sky-700"></i>
-                                <span>Kelola Daftar Siswa & Kelompok Keterampilan</span>
-                            </h3>
-                            <button onclick="addNewStudent()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow flex items-center space-x-1">
-                                <i class="fa-solid fa-user-plus"></i>
-                                <span>+ Tambah Siswa</span>
-                            </button>
+                            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Kelola Daftar Siswa</h3>
+                            <button onclick="addNewStudent()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow">+ Tambah Siswa</button>
                         </div>
-
                         <div id="studentsEditContainer" class="space-y-3"></div>
-
                         <div class="pt-2 flex justify-end">
-                            <button onclick="saveStudentSettingsToStorage()" class="px-5 py-2.5 bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold rounded-xl shadow flex items-center space-x-1.5">
-                                <i class="fa-solid fa-floppy-disk"></i>
-                                <span>Simpan Perubahan Siswa</span>
-                            </button>
+                            <button onclick="saveStudentSettingsToStorage()" class="px-5 py-2.5 bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold rounded-xl shadow">Simpan Perubahan Siswa</button>
                         </div>
                     </div>
                 </section>
@@ -728,7 +580,6 @@
         <span id="toastMsg">Tersimpan</span>
     </div>
 
-    <!-- SCRIPT UTAMA KODE LENGKAP & INTEGRASI AMAN -->
     <script>
         let currentUser = null;
         let currentUserRole = 'GURU_KELAS';
@@ -740,10 +591,7 @@
                 schoolName: 'SLBN 1 Kulon Progo', 
                 className: 'Kelas III', 
                 teacherName: 'Agung Lian Prasetyadi, S.Pd', 
-                teacherNip: '',
-                headmasterName: 'Titin Nurhayati, S.Psi., M.Pd',
-                headmasterNip: '',
-                customLogo: ''
+                headmasterName: 'Titin Nurhayati, S.Psi., M.Pd'
             };
         }
 
@@ -772,75 +620,29 @@
             return `${days[dateObj.getDay()]}, ${day} ${months[month - 1]} ${year}`;
         }
 
-        function formatPrintDateIndonesian(dateString) {
-            if (!dateString) return 'Kulon Progo, -';
-            const [year, month, day] = dateString.split('-').map(Number);
-            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `Kulon Progo, ${day} ${months[month - 1]} ${year}`;
-        }
-
-        function formatMonthYearIndonesian(monthString) {
-            if (!monthString) return '-';
-            const [year, month] = monthString.split('-').map(Number);
-            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `${months[month - 1]} ${year}`;
-        }
-
-        function formatShortDateIndonesian(dateString) {
-            if (!dateString) return '';
-            const [year, month, day] = dateString.split('-');
-            return `(${day}/${month}/${year})`;
-        }
-
         const selectedDateInput = document.getElementById('selectedDate');
         const selectedMonthInput = document.getElementById('selectedMonth');
-        const printDateMonthlyInput = document.getElementById('printDateMonthlyInput');
-        const printDateSensoryInput = document.getElementById('printDateSensoryInput');
 
         window.addEventListener('DOMContentLoaded', () => {
             const today = localISODate();
             selectedDateInput.value = today;
             selectedMonthInput.value = today.substring(0, 7);
-            printDateMonthlyInput.value = today;
-            printDateSensoryInput.value = today;
-            
-            document.getElementById('topDateBadge').textContent = formatFullDateIndonesian(today);
-            document.getElementById('hmTodayDate').textContent = formatFullDateIndonesian(today);
-            document.getElementById('dailyDateTitle').textContent = formatFullDateIndonesian(today);
-            document.getElementById('btnTodayShortDate').textContent = formatShortDateIndonesian(today);
 
-            document.getElementById('importJsonInput').addEventListener('change', handleJsonFileSelect);
-
-            const checkFirebaseLoaded = setInterval(() => {
-                if (window.fbOnAuth) {
-                    clearInterval(checkFirebaseLoaded);
-                    window.fbOnAuth(window.fbAuth, (user) => {
-                        if (user) {
-                            currentUser = user;
-                            document.getElementById('userEmailBadge').textContent = user.email;
-                            openMainApp();
-                            loadUserDataFromFirebase(user.uid);
-                        } else {
-                            currentUser = null;
-                            clearLocalCache();
-                            showLandingScreen();
-                        }
-                    });
-                }
-            }, 100);
-
-            selectedDateInput.addEventListener('change', () => { 
-                const dt = selectedDateInput.value;
-                document.getElementById('topDateBadge').textContent = formatFullDateIndonesian(dt);
-                document.getElementById('dailyDateTitle').textContent = formatFullDateIndonesian(dt);
-                renderDailyCards(); 
-            });
-
-            selectedMonthInput.addEventListener('change', () => { 
-                renderMonthlyTable(); 
-                renderSensoryJournal(); 
-                if (currentUserRole === 'KEPALA_SEKOLAH') renderHeadmasterTeacherDetail();
-            });
+            if (window.fbIsReady && window.fbAuth) {
+                window.fbAuth.onAuthStateChanged((user) => {
+                    if (user) {
+                        currentUser = user;
+                        document.getElementById('userEmailBadge').textContent = user.email;
+                        openMainApp();
+                        loadUserDataFromFirebase(user.uid);
+                    } else {
+                        currentUser = null;
+                        showLandingScreen();
+                    }
+                });
+            } else {
+                useOfflineMode();
+            }
         });
 
         function showLandingScreen() {
@@ -851,907 +653,174 @@
         function openMainApp() {
             document.getElementById('landingScreen').classList.add('hidden');
             document.getElementById('mainAppContent').classList.remove('hidden');
-            
             renderNavigationForRole();
             applyConfigToDOM();
-            updateGroupDropdowns();
             renderDailyCards();
             renderMonthlyTable();
             renderStudentsEdit();
             renderSensoryJournal();
-            populateStudentFilter();
-            populateCloudClassSelector();
         }
 
         function renderNavigationForRole() {
             const nav = document.getElementById('navContainer');
-            if (currentUserRole === 'KEPALA_SEKOLAH') {
-                nav.innerHTML = `
-                    <button onclick="switchTab('headmaster')" id="nav-headmaster" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-white bg-sky-700 shadow-sm transition">
-                        <i class="fa-solid fa-chart-pie text-base w-5 text-center"></i>
-                        <span>Dashboard Pantau</span>
-                    </button>
-                    <button onclick="switchTab('daily')" id="nav-daily" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
-                        <i class="fa-solid fa-house text-base w-5 text-center"></i>
-                        <span>Presensi Harian</span>
-                    </button>
-                    <button onclick="switchTab('monthly')" id="nav-monthly" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
-                        <i class="fa-solid fa-table-cells text-base w-5 text-center"></i>
-                        <span>Rekap Bulanan</span>
-                    </button>
-                    <button onclick="switchTab('sensory')" id="nav-sensory" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
-                        <i class="fa-solid fa-book-open text-base w-5 text-center"></i>
-                        <span>Jurnal Perkembangan</span>
-                    </button>
-                    <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
-                        <i class="fa-solid fa-sliders text-base w-5 text-center"></i>
-                        <span>Pengaturan & JSON</span>
-                    </button>
-                `;
-                switchTab('headmaster');
-            } else {
-                nav.innerHTML = `
-                    <button onclick="switchTab('daily')" id="nav-daily" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-white bg-sky-700 shadow-sm transition">
-                        <i class="fa-solid fa-house text-base w-5 text-center"></i>
-                        <span>Presensi Harian</span>
-                    </button>
-                    <button onclick="switchTab('monthly')" id="nav-monthly" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
-                        <i class="fa-solid fa-table-cells text-base w-5 text-center"></i>
-                        <span>Rekap Bulanan</span>
-                    </button>
-                    <button onclick="switchTab('sensory')" id="nav-sensory" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
-                        <i class="fa-solid fa-book-open text-base w-5 text-center"></i>
-                        <span>Jurnal Perkembangan</span>
-                    </button>
-                    <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
-                        <i class="fa-solid fa-sliders text-base w-5 text-center"></i>
-                        <span>Pengaturan & JSON</span>
-                    </button>
-                `;
-                switchTab('daily');
-            }
+            nav.innerHTML = `
+                <button onclick="switchTab('daily')" id="nav-daily" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-white bg-sky-700 shadow-sm transition">
+                    <i class="fa-solid fa-house text-base w-5 text-center"></i>
+                    <span>Presensi Harian</span>
+                </button>
+                <button onclick="switchTab('monthly')" id="nav-monthly" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
+                    <i class="fa-solid fa-table-cells text-base w-5 text-center"></i>
+                    <span>Rekap Bulanan</span>
+                </button>
+                <button onclick="switchTab('sensory')" id="nav-sensory" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
+                    <i class="fa-solid fa-book-open text-base w-5 text-center"></i>
+                    <span>Jurnal Perkembangan</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sky-100 hover:bg-sky-800 transition">
+                    <i class="fa-solid fa-sliders text-base w-5 text-center"></i>
+                    <span>Pengaturan & JSON</span>
+                </button>
+            `;
+            switchTab('daily');
         }
 
         function useOfflineMode() {
-            localStorage.removeItem('sikemasku_force_logged_out');
             loadLocalCache();
             openMainApp();
             showToast("Masuk Mode Akses Cepat!");
         }
 
         function saveLocalCache() {
-            const prefix = currentUser ? currentUser.uid : 'guest';
-            localStorage.setItem(`sikemasku_config_${prefix}`, JSON.stringify(schoolConfig));
-            localStorage.setItem(`sikemasku_students_${prefix}`, JSON.stringify(students));
-            localStorage.setItem(`sikemasku_attendance_${prefix}`, JSON.stringify(attendanceData));
-            localStorage.setItem(`sikemasku_role_${prefix}`, currentUserRole);
+            localStorage.setItem('sikemasku_data_students', JSON.stringify(students));
+            localStorage.setItem('sikemasku_data_config', JSON.stringify(schoolConfig));
+            localStorage.setItem('sikemasku_data_att', JSON.stringify(attendanceData));
         }
 
         function loadLocalCache() {
-            const prefix = currentUser ? currentUser.uid : 'guest';
             try {
-                const c = localStorage.getItem(`sikemasku_config_${prefix}`);
-                const s = localStorage.getItem(`sikemasku_students_${prefix}`);
-                const a = localStorage.getItem(`sikemasku_attendance_${prefix}`);
-                const r = localStorage.getItem(`sikemasku_role_${prefix}`);
-                if (c) schoolConfig = Object.assign(getDefaultConfig(), JSON.parse(c));
+                const s = localStorage.getItem('sikemasku_data_students');
+                const c = localStorage.getItem('sikemasku_data_config');
+                const a = localStorage.getItem('sikemasku_data_att');
                 if (s) students = JSON.parse(s);
+                if (c) schoolConfig = JSON.parse(c);
                 if (a) attendanceData = JSON.parse(a);
-                if (r) currentUserRole = r;
             } catch(e) {}
-        }
-
-        function clearLocalCache() {
-            schoolConfig = getDefaultConfig();
-            students = [];
-            attendanceData = {};
-            currentUserRole = 'GURU_KELAS';
         }
 
         function toggleAuthTab(type) {
             if (type === 'login') {
                 document.getElementById('formLogin').classList.remove('hidden');
                 document.getElementById('formRegister').classList.add('hidden');
-                document.getElementById('tabBtnLogin').className = "flex-1 py-2 border-b-2 border-sky-600 text-sky-700";
-                document.getElementById('tabBtnRegister').className = "flex-1 py-2 text-slate-400";
             } else {
                 document.getElementById('formLogin').classList.add('hidden');
                 document.getElementById('formRegister').classList.remove('hidden');
-                document.getElementById('tabBtnRegister').className = "flex-1 py-2 border-b-2 border-sky-600 text-sky-700";
-                document.getElementById('tabBtnLogin').className = "flex-1 py-2 text-slate-400";
             }
         }
 
         async function handleFirebaseLogin(e) {
             e.preventDefault();
-            const btn = document.getElementById('btnLoginSubmit');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memproses...';
-
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
 
-            if (window.fbIsReady && window.fbSignIn) {
+            if (window.fbIsReady && window.fbAuth) {
                 try {
-                    localStorage.removeItem('sikemasku_force_logged_out');
-                    const userCred = await window.fbSignIn(window.fbAuth, email, pass);
-                    currentUser = userCred.user;
-                    document.getElementById('userEmailBadge').textContent = currentUser.email;
-                    await loadUserDataFromFirebase(currentUser.uid, true);
-                    openMainApp();
-                    showToast("Selamat datang kembali!");
-                } catch (err) { 
-                    console.warn("Gagal login cloud, mengalihkan ke mode lokal:", err);
+                    await window.fbAuth.signInWithEmailAndPassword(email, pass);
+                } catch (err) {
                     useOfflineMode();
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = 'Masuk Akun <i class="fa-solid fa-right-to-bracket ml-1"></i>';
                 }
             } else {
                 useOfflineMode();
-                btn.disabled = false;
-                btn.innerHTML = 'Masuk Akun <i class="fa-solid fa-right-to-bracket ml-1"></i>';
             }
         }
 
-        async function handleForgotPassword() {
-            const inputEmail = document.getElementById('loginEmail').value || prompt("Masukkan alamat email Anda yang terdaftar:");
-            if (!inputEmail) {
-                alert("Silakan masukkan email Anda terlebih dahulu.");
-                return;
-            }
-
-            try {
-                if (window.fbResetPass) {
-                    await window.fbResetPass(window.fbAuth, inputEmail);
-                    alert(`Email tautan reset password telah dikirimkan ke ${inputEmail}.\n\nSilakan periksa kotak masuk/spam email Anda.`);
-                } else {
-                    alert("Sistem email reset sedang offline. Silakan gunakan Mode Lokal.");
-                }
-            } catch (err) {
-                alert("Gagal mengirim email reset password. Pastikan alamat email benar.");
-            }
-        }
-
-        async function handleFirebaseRegister(e) {
-            e.preventDefault();
-            const email = document.getElementById('regEmail').value;
-            const pass = document.getElementById('regPass').value;
-            const role = document.getElementById('regRole').value;
-            const btn = document.getElementById('btnRegSubmit');
-
-            if (pass.length < 6) {
-                alert("Password minimal harus 6 karakter!");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memproses...';
-
-            try {
-                if (window.fbIsReady && window.fbSignUp) {
-                    localStorage.removeItem('sikemasku_force_logged_out');
-                    const userCred = await window.fbSignUp(window.fbAuth, email, pass);
-                    currentUser = userCred.user;
-                    currentUserRole = role;
-                    
-                    if (currentUser) {
-                        schoolConfig = getDefaultConfig();
-                        students = [];
-                        attendanceData = {};
-                        await syncAllToFirebase();
-                    }
-
-                    document.getElementById('userEmailBadge').textContent = currentUser.email;
-                    openMainApp();
-                    showToast("Akun berhasil dibuat!");
-                } else {
-                    useOfflineMode();
-                }
-            } catch (err) { 
-                alert("Gagal Pendaftaran: " + err.message); 
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Daftar Akun Baru';
-            }
-        }
-
-        function handleFirebaseLogout() { 
-            localStorage.setItem('sikemasku_force_logged_out', 'true');
-            if (window.fbAuth && window.fbSignOut) {
-                window.fbSignOut(window.fbAuth).then(() => { location.reload(); }).catch(() => { location.reload(); });
+        function handleFirebaseLogout() {
+            if (window.fbIsReady && window.fbAuth) {
+                window.fbAuth.signOut().then(() => location.reload()).catch(() => location.reload());
             } else {
                 location.reload();
             }
         }
 
-        async function loadUserDataFromFirebase(uid, forceCloud = false) {
-            if (!uid || !window.fbGet) return;
-            if (!forceCloud) loadLocalCache();
-
+        async function loadUserDataFromFirebase(uid) {
+            if (!uid || !window.fbDb) return;
             try {
-                const snapshot = await window.fbGet(window.fbChild(window.fbRef(window.fbDb), `users/${uid}`));
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    if (data.students && Array.isArray(data.students)) students = data.students;
-                    if (data.config) schoolConfig = Object.assign(getDefaultConfig(), data.config);
+                const snap = await window.fbDb.ref(`users/${uid}`).once('value');
+                if (snap.exists()) {
+                    const data = snap.val();
+                    if (data.students) students = data.students;
+                    if (data.config) schoolConfig = data.config;
                     if (data.attendance) attendanceData = data.attendance;
-                    if (data.role) currentUserRole = data.role;
                     saveLocalCache();
+                    openMainApp();
                 }
-
-                if (currentUserRole === 'KEPALA_SEKOLAH') {
-                    await loadHeadmasterGlobalDashboard();
-                }
-
-                applyConfigToDOM(); 
-                updateGroupDropdowns();
-                renderDailyCards(); 
-                renderMonthlyTable(); 
-                renderStudentsEdit(); 
-                renderSensoryJournal(); 
-                populateStudentFilter();
-                populateCloudClassSelector();
-            } catch (e) { console.error("Database note:", e); }
-        }
-
-        async function populateCloudClassSelector() {
-            const selector = document.getElementById('cloudClassPullSelector');
-            if (!selector || !window.fbGet) return;
-
-            try {
-                const snapshot = await window.fbGet(window.fbChild(window.fbRef(window.fbDb), `users`));
-                if (!snapshot.exists()) {
-                    selector.innerHTML = `<option value="">-- Belum ada data kelas di Cloud --</option>`;
-                    return;
-                }
-
-                const usersData = snapshot.val();
-                availableCloudClassesMap = {};
-                let optsHTML = `<option value="">-- Pilih Kelas / Wali Kelas --</option>`;
-
-                Object.keys(usersData).forEach(uid => {
-                    const u = usersData[uid];
-                    if (u.role !== 'KEPALA_SEKOLAH' && u.students && u.students.length > 0) {
-                        const className = u.config?.className || 'Kelas Tanpa Nama';
-                        const teacherName = u.config?.teacherName || 'Wali Kelas';
-                        const count = u.students.length;
-
-                        availableCloudClassesMap[uid] = u.students;
-                        optsHTML += `<option value="${uid}">${className} (${teacherName} - ${count} murid)</option>`;
-                    }
-                });
-
-                selector.innerHTML = optsHTML;
-            } catch (err) {
-                selector.innerHTML = `<option value="">-- Gagal memuat data kelas --</option>`;
-            }
-        }
-
-        async function pullStudentDataFromClass() {
-            const selector = document.getElementById('cloudClassPullSelector');
-            const targetUid = selector.value;
-
-            if (!targetUid || !availableCloudClassesMap[targetUid]) {
-                alert("Silakan pilih kelas sasaran terlebih dahulu dari daftar!");
-                return;
-            }
-
-            const pulledStudents = availableCloudClassesMap[targetUid];
-            if (!pulledStudents || pulledStudents.length === 0) {
-                alert("Kelas yang dipilih tidak memiliki data murid.");
-                return;
-            }
-
-            const confirmMerge = confirm(`Ditemukan ${pulledStudents.length} murid pada kelas tersebut.\n\nKlik 'OK' untuk MENGGABUNGKAN ke daftar murid Anda saat ini.\nKlik 'Cancel' jika ingin MENGGANTI seluruh daftar murid Anda.`);
-
-            if (confirmMerge) {
-                const existingNises = new Set(students.map(s => String(s.nis || s.id)));
-                let addedCount = 0;
-
-                pulledStudents.forEach(st => {
-                    const nisKey = String(st.nis || st.id);
-                    if (!existingNises.has(nisKey)) {
-                        const maxId = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
-                        students.push({
-                            id: maxId,
-                            name: st.name,
-                            nis: st.nis || '',
-                            group: st.group || 'Umum',
-                            phone: st.phone || ''
-                        });
-                        addedCount++;
-                    }
-                });
-
-                await syncAllToFirebase();
-                renderStudentsEdit();
-                updateGroupDropdowns();
-                renderDailyCards();
-                populateStudentFilter();
-                showToast(`${addedCount} murid baru berhasil ditambahkan!`);
-            } else {
-                students = pulledStudents.map((st, idx) => ({
-                    id: idx + 1,
-                    name: st.name,
-                    nis: st.nis || '',
-                    group: st.group || 'Umum',
-                    phone: st.phone || ''
-                }));
-
-                await syncAllToFirebase();
-                renderStudentsEdit();
-                updateGroupDropdowns();
-                renderDailyCards();
-                populateStudentFilter();
-                showToast(`Daftar murid diperbarui (${students.length} murid)!`);
-            }
-        }
-
-        async function loadHeadmasterGlobalDashboard() {
-            if (!window.fbGet) return;
-            try {
-                const snapshot = await window.fbGet(window.fbChild(window.fbRef(window.fbDb), `users`));
-                if (!snapshot.exists()) return;
-
-                globalUsersDatabaseCache = snapshot.val();
-                const today = localISODate();
-
-                let totalStudents = 0, totalTeachers = 0, totH = 0, totS = 0, totI = 0, totA = 0;
-                const statusContainer = document.getElementById('hmClassStatusContainer');
-                const teacherSelector = document.getElementById('hmTeacherSelector');
-                
-                statusContainer.innerHTML = '';
-                let selectOpts = `<option value="">-- Pilih Guru / Kelas --</option>`;
-
-                Object.keys(globalUsersDatabaseCache).forEach(uid => {
-                    const u = globalUsersDatabaseCache[uid];
-                    if (u.role !== 'KEPALA_SEKOLAH') {
-                        totalTeachers++;
-                        const className = u.config?.className || u.config?.schoolName || 'Kelas Noname';
-                        const teacherName = u.config?.teacherName || 'Pengajar';
-                        const userStudents = u.students || [];
-                        totalStudents += userStudents.length;
-
-                        const todayAtt = u.attendance?.[today] || {};
-                        const filledCount = Object.keys(todayAtt).length;
-                        const isFilled = filledCount > 0;
-
-                        userStudents.forEach(st => {
-                            const rec = todayAtt[st.id]?.status;
-                            if (rec === 'H') totH++;
-                            else if (rec === 'S') totS++;
-                            else if (rec === 'I') totI++;
-                            else if (rec === 'A') totA++;
-                        });
-
-                        selectOpts += `<option value="${uid}">${teacherName} (${className})</option>`;
-
-                        const row = document.createElement('div');
-                        row.className = `p-3 rounded-xl border flex justify-between items-center ${isFilled ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-700'}`;
-                        row.innerHTML = `
-                            <div>
-                                <h5 class="font-extrabold">${className}</h5>
-                                <p class="text-[10px] text-slate-500">Guru: ${teacherName} (${userStudents.length} murid)</p>
-                            </div>
-                            <div>
-                                ${isFilled ? `<span class="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-lg text-[10px]"><i class="fa-solid fa-check mr-1"></i> Sudah Diisi</span>` : `<span class="px-2.5 py-1 bg-rose-100 text-rose-700 font-bold rounded-lg text-[10px]"><i class="fa-solid fa-clock mr-1"></i> Belum Diisi</span>`}
-                            </div>
-                        `;
-                        statusContainer.appendChild(row);
-                    }
-                });
-
-                teacherSelector.innerHTML = selectOpts;
-
-                document.getElementById('hmTotalStudents').textContent = totalStudents;
-                document.getElementById('hmTotalTeachers').textContent = totalTeachers;
-                document.getElementById('hmTotalHadir').textContent = totH;
-                document.getElementById('hmTotalSakitIzin').textContent = (totS + totI);
-                document.getElementById('hmTotalAlfa').textContent = totA;
-            } catch(err) { console.error("HM Dashboard error:", err); }
-        }
-
-        function renderHeadmasterTeacherDetail() {
-            const uid = document.getElementById('hmTeacherSelector').value;
-            const detailArea = document.getElementById('hmTeacherDetailArea');
-            const placeholder = document.getElementById('hmNoTeacherPlaceholder');
-
-            if (!uid || !globalUsersDatabaseCache[uid]) {
-                detailArea.classList.add('hidden');
-                placeholder.classList.remove('hidden');
-                return;
-            }
-
-            placeholder.classList.add('hidden');
-            detailArea.classList.remove('hidden');
-
-            const targetUser = globalUsersDatabaseCache[uid];
-            const cfg = targetUser.config || {};
-            const teacherStudents = targetUser.students || [];
-            const teacherAtt = targetUser.attendance || {};
-
-            document.getElementById('hmInspectorTeacherName').textContent = cfg.teacherName || '[Nama Guru]';
-            document.getElementById('hmInspectorClassName').textContent = cfg.className || '[Nama Kelas / Mapel]';
-
-            const monthStr = selectedMonthInput.value;
-            const [year, month] = monthStr.split('-').map(Number);
-            const daysInMonth = new Date(year, month, 0).getDate();
-
-            const daysHeaderRow = document.getElementById('hmDaysHeaderRow');
-            let headerHTML = `<th class="p-1.5 border text-center">NO</th><th class="p-1.5 border text-center">NIS</th><th class="p-1.5 border">NAMA SISWA</th><th class="p-1.5 border text-center">KELOMPOK</th>`;
-            for (let d = 1; d <= daysInMonth; d++) headerHTML += `<th class="p-0.5 border text-center w-6 text-[10px]">${d}</th>`;
-            headerHTML += `<th class="p-1 border text-center bg-emerald-100 text-emerald-800">H</th><th class="p-1 border text-center bg-amber-100 text-amber-800">S</th><th class="p-1 border text-center bg-sky-100 text-sky-800">I</th><th class="p-1 border text-center bg-rose-100 text-rose-800">A</th><th class="p-1 border text-center">%</th>`;
-            daysHeaderRow.innerHTML = headerHTML;
-
-            const tbody = document.getElementById('hmMonthlyTableBody');
-            tbody.innerHTML = '';
-
-            teacherStudents.forEach((student, index) => {
-                const nisStr = String(student.nis || student.id).padStart(3, '0');
-                let hCount = 0, sCount = 0, iCount = 0, aCount = 0;
-
-                let rowHTML = `<tr>
-                    <td class="p-1.5 border text-center font-bold">${index + 1}</td>
-                    <td class="p-1.5 border text-center font-bold text-slate-500">${nisStr}</td>
-                    <td class="p-1.5 border font-bold text-slate-800">${student.name}</td>
-                    <td class="p-1.5 border text-center font-bold text-amber-800 bg-amber-50">${student.group || 'Umum'}</td>`;
-
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const fullDate = `${monthStr}-${String(d).padStart(2, '0')}`;
-                    const st = teacherAtt[fullDate]?.[student.id]?.status || '-';
-                    let bgClass = 'text-slate-300';
-
-                    if (st === 'H') { bgClass = 'bg-emerald-50 text-emerald-700 font-black'; hCount++; }
-                    else if (st === 'S') { bgClass = 'bg-amber-100 text-amber-800 font-black'; sCount++; }
-                    else if (st === 'I') { bgClass = 'bg-sky-100 text-sky-800 font-black'; iCount++; }
-                    else if (st === 'A') { bgClass = 'bg-rose-100 text-rose-800 font-black'; aCount++; }
-
-                    rowHTML += `<td class="p-0.5 border text-center ${bgClass}">${st}</td>`;
-                }
-
-                const totalActive = hCount + sCount + iCount + aCount;
-                const pct = totalActive > 0 ? Math.round((hCount / totalActive) * 100) : 0;
-
-                rowHTML += `<td class="p-1 border text-center font-black text-emerald-700 bg-emerald-50/50">${hCount}</td><td class="p-1 border text-center font-black text-amber-700 bg-amber-50/50">${sCount}</td><td class="p-1 border text-center font-black text-sky-700 bg-sky-50/50">${iCount}</td><td class="p-1 border text-center font-black text-rose-700 bg-rose-50/50">${aCount}</td><td class="p-1 border text-center font-black text-slate-800">${pct}%</td></tr>`;
-                tbody.innerHTML += rowHTML;
-            });
-
-            const sensoryNotesContainer = document.getElementById('hmSensoryNotesList');
-            sensoryNotesContainer.innerHTML = '';
-            let hasEntries = false;
-
-            Object.keys(teacherAtt).sort().reverse().forEach(date => {
-                if (date.startsWith(monthStr)) {
-                    teacherStudents.forEach(student => {
-                        const rec = teacherAtt[date][student.id];
-                        if (rec && (rec.note || rec.mood)) {
-                            hasEntries = true;
-                            const divCard = document.createElement('div');
-                            divCard.className = 'bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5';
-                            divCard.innerHTML = `
-                                <div class="flex justify-between items-center border-b pb-1.5">
-                                    <div>
-                                        <span class="text-slate-900 font-extrabold">${student.name}</span>
-                                        <span class="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold">${student.group || 'Umum'}</span>
-                                    </div>
-                                    <span class="text-slate-500 font-semibold text-[11px]">${formatFullDateIndonesian(date)}</span>${rec.mood ? `<span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-[10px]">${rec.mood}</span>` : ''}
-                                </div>
-                                ${rec.note ? `<p class="text-slate-700 leading-relaxed font-medium">${rec.note}</p>` : '<p class="text-slate-400 italic text-[11px]">Tidak ada catatan tertulis.</p>'}
-                            `;
-                            sensoryNotesContainer.appendChild(divCard);
-                        }
-                    });
-                }
-            });
-
-            if (!hasEntries) {
-                sensoryNotesContainer.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">Belum ada catatan jurnal pada periode bulan ini dari guru terpilih.</p>`;
-            }
-        }
-
-        function printHeadmasterTeacherReport(type) {
-            const uid = document.getElementById('hmTeacherSelector').value;
-            if (!uid || !globalUsersDatabaseCache[uid]) return;
-
-            const targetUser = globalUsersDatabaseCache[uid];
-            const cfg = targetUser.config || {};
-            const hmName = schoolConfig.teacherName || schoolConfig.headmasterName || 'Titin Nurhayati, S.Psi., M.Pd';
-            const hmNip = schoolConfig.headmasterNip ? `NIP. ${schoolConfig.headmasterNip}` : '';
-
-            const teacherName = cfg.teacherName || 'Agung Lian Prasetyadi, S.Pd';
-            const teacherNip = cfg.teacherNip ? `NIP. ${cfg.teacherNip}` : '';
-            const classNameUpper = (cfg.className || 'KELAS III').toUpperCase();
-            const schoolNameUpper = (schoolConfig.schoolName || 'SLBN 1 KULON PROGO').toUpperCase();
-            const formattedMonthText = formatMonthYearIndonesian(selectedMonthInput.value);
-            const formattedPrintDate = formatPrintDateIndonesian(localISODate());
-
-            document.getElementById('hmMonthlyPrintBlock').classList.remove('is-printing');
-            document.getElementById('hmSensoryPrintBlock').classList.remove('is-printing');
-
-            if (type === 'monthly') {
-                document.getElementById('hmPrintMonthlyTitle').textContent = `REKAPITULASI PRESENSI - ${classNameUpper}`;
-                document.getElementById('hmPrintMonthlySchool').textContent = schoolNameUpper;
-                document.getElementById('hmPrintMonthPeriod').textContent = formattedMonthText;
-
-                document.getElementById('hmPrintHMName').textContent = hmName;
-                document.getElementById('hmPrintHMNip').textContent = hmNip;
-                document.getElementById('hmPrintTRName').textContent = teacherName;
-                document.getElementById('hmPrintTRNip').textContent = teacherNip;
-                document.getElementById('hmPrintTodayDate').textContent = formattedPrintDate;
-
-                document.getElementById('hmMonthlyPrintBlock').classList.add('is-printing');
-                setTimeout(() => { window.print(); }, 100);
-            } else if (type === 'sensory') {
-                document.getElementById('hmPrintSensoryTitle').textContent = `LAPORAN JURNAL PERKEMBANGAN SISWA - ${classNameUpper}`;
-                document.getElementById('hmPrintSensorySchool').textContent = schoolNameUpper;
-                document.getElementById('hmPrintSensoryMonth').textContent = formattedMonthText;
-
-                document.getElementById('hmSensoryHMName').textContent = hmName;
-                document.getElementById('hmSensoryHMNip').textContent = hmNip;
-                document.getElementById('hmSensoryTRName').textContent = teacherName;
-                document.getElementById('hmSensoryTRNip').textContent = teacherNip;
-                document.getElementById('hmSensoryTodayDate').textContent = formattedPrintDate;
-
-                document.getElementById('hmSensoryPrintBlock').classList.add('is-printing');
-                setTimeout(() => { window.print(); }, 100);
-            }
-        }
-
-        async function forceReloadCloudData() {
-            if (!currentUser) {
-                showToast("Memuat data lokal...");
-                loadLocalCache();
-                renderDailyCards();
-                return;
-            }
-            showToast("Mengunduh data terbaru...");
-            await loadUserDataFromFirebase(currentUser.uid, true);
-            showToast("Data terbaru berhasil dimuat!");
-        }
-
-        async function syncToFirebase(path, data) {
-            saveLocalCache();
-            if (!currentUser || !window.fbSet) return;
-            try {
-                await window.fbSet(window.fbRef(window.fbDb, `users/${currentUser.uid}/${path}`), data);
-            } catch(e) { console.error("Firebase sync error: ", e); }
-        }
-
-        async function syncAllToFirebase() {
-            saveLocalCache();
-            if (!currentUser || !window.fbSet) return;
-            try {
-                await window.fbSet(window.fbRef(window.fbDb, `users/${currentUser.uid}`), {
-                    config: schoolConfig,
-                    students: students,
-                    attendance: attendanceData,
-                    role: currentUserRole
-                });
-                showToast("Tersimpan di Cloud!");
-            } catch(e) {
-                showToast("Tersimpan secara Lokal");
-            }
-        }
-
-        async function handleJsonFileSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async function(evt) {
-                try {
-                    const raw = JSON.parse(evt.target.result);
-
-                    const cfg = raw.schoolConfig || raw.config || {};
-                    schoolConfig = {
-                        schoolName: cfg.schoolName || schoolConfig.schoolName,
-                        className: cfg.className || schoolConfig.className,
-                        teacherName: cfg.teacherName || schoolConfig.teacherName,
-                        teacherNip: cfg.teacherNip || schoolConfig.teacherNip || '',
-                        headmasterName: cfg.headmasterName || schoolConfig.headmasterName || '',
-                        headmasterNip: cfg.headmasterNip || schoolConfig.headmasterNip || '',
-                        customLogo: cfg.customLogo || schoolConfig.customLogo || ''
-                    };
-
-                    const rawStudents = raw.students || [];
-                    if (Array.isArray(rawStudents) && rawStudents.length > 0) {
-                        students = rawStudents.map((s, idx) => ({
-                            id: s.id !== undefined ? s.id : (idx + 1),
-                            name: s.name || `Siswa ${idx + 1}`,
-                            nis: String(s.nis || ''),
-                            group: s.group || 'Umum',
-                            phone: String(s.phone || '')
-                        }));
-                    }
-
-                    const rawAtt = raw.attendanceData || raw.attendance || {};
-                    if (Object.keys(rawAtt).length > 0) attendanceData = rawAtt;
-
-                    saveLocalCache();
-                    await syncAllToFirebase();
-
-                    applyConfigToDOM();
-                    updateGroupDropdowns();
-                    renderDailyCards();
-                    renderMonthlyTable();
-                    renderStudentsEdit();
-                    renderSensoryJournal();
-                    populateStudentFilter();
-
-                    alert(`BERHASIL DISINKRONKAN!\nSekolah: ${schoolConfig.schoolName}\nTotal Siswa:${students.length} anak`);
-                } catch (err) { alert("Format JSON tidak sesuai: " + err.message); }
-            };
-            reader.readAsText(file);
-        }
-
-        function handleLogoUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                schoolConfig.customLogo = evt.target.result;
-                applyConfigToDOM();
-                syncToFirebase('config', schoolConfig);
-                showToast("Logo berhasil diubah!");
-            };
-            reader.readAsDataURL(file);
+            } catch (e) {}
         }
 
         function applyConfigToDOM() {
-            const schoolName = schoolConfig.schoolName || 'SLBN 1 Kulon Progo';
-            const className = schoolConfig.className || 'Kelas III';
-            const teacherName = schoolConfig.teacherName || 'Agung Lian Prasetyadi, S.Pd';
-            const headmasterName = schoolConfig.headmasterName || 'Titin Nurhayati, S.Psi., M.Pd';
-
-            const roleLabels = { 'GURU_KELAS': 'Guru Kelas', 'GURU_MAPEL': 'Guru Mapel', 'KEPALA_SEKOLAH': 'Kepala Sekolah' };
-
-            document.getElementById('sidebarSchoolName').textContent = schoolName;
-            document.getElementById('sidebarClassName').textContent = `${roleLabels[currentUserRole] \vert{}\vert{} 'Guru'} -${className}`;
-            
-            document.getElementById('cardRoleBadge').textContent = roleLabels[currentUserRole] || 'GURU / PENGAJAR';
-            document.getElementById('cardTeacherName').textContent = teacherName;
-            document.getElementById('cardHeadmasterName').textContent = headmasterName;
+            document.getElementById('sidebarSchoolName').textContent = schoolConfig.schoolName || 'SLBN 1 Kulon Progo';
+            document.getElementById('sidebarClassName').textContent = schoolConfig.className || 'Kelas III';
+            document.getElementById('cardTeacherName').textContent = schoolConfig.teacherName || 'Agung Lian Prasetyadi, S.Pd';
+            document.getElementById('cardHeadmasterName').textContent = schoolConfig.headmasterName || 'Titin Nurhayati, S.Psi., M.Pd';
 
             document.getElementById('cfgSchoolName').value = schoolConfig.schoolName || '';
             document.getElementById('cfgClassName').value = schoolConfig.className || '';
             document.getElementById('cfgTeacherName').value = schoolConfig.teacherName || '';
-            document.getElementById('cfgTeacherNip').value = schoolConfig.teacherNip || '';
             document.getElementById('cfgHeadmasterName').value = schoolConfig.headmasterName || '';
-            document.getElementById('cfgHeadmasterNip').value = schoolConfig.headmasterNip || '';
-
-            if (schoolConfig.customLogo) {
-                const imgHTML = `<img src="${schoolConfig.customLogo}" class="w-full h-full object-contain">`;
-                document.getElementById('sidebarLogoBox').innerHTML = imgHTML;
-                document.getElementById('landingLogoBox').innerHTML = imgHTML;
-                document.getElementById('previewLogoBox').innerHTML = imgHTML;
-            }
-        }
-
-        function updateGroupDropdowns() {
-            const groups = Array.from(new Set(students.map(s => s.group || 'Umum'))).filter(Boolean);
-            
-            const dailySel = document.getElementById('dailyGroupFilter');
-            const monthlySel = document.getElementById('monthlyGroupFilter');
-            
-            let opts = `<option value="ALL">-- Semua Siswa / Umum --</option>`;
-            groups.forEach(g => { opts += `<option value="${g}">${g}</option>`; });
-
-            dailySel.innerHTML = opts;
-            monthlySel.innerHTML = opts;
         }
 
         function switchTab(t) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             const targetTab = document.getElementById(`tab-${t}`);
             if (targetTab) targetTab.classList.add('active');
-            
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-white', 'bg-sky-700', 'shadow-sm');
-                btn.classList.add('text-sky-100');
-            });
-            
-            const activeBtn = document.getElementById(`nav-${t}`);
-            if (activeBtn) {
-                activeBtn.classList.remove('text-sky-100');
-                activeBtn.classList.add('text-white', 'bg-sky-700', 'shadow-sm');
-            }
-
-            const titles = { headmaster: 'Dashboard Kepala Sekolah', daily: 'Presensi Harian', monthly: 'Rekap Bulanan', sensory: 'Jurnal Perkembangan', settings: 'Pengaturan & JSON' };
-            document.getElementById('topPageTitle').textContent = titles[t] || 'Presensi';
 
             if (t === 'monthly') renderMonthlyTable();
             if (t === 'sensory') renderSensoryJournal();
-            if (t === 'settings') { renderStudentsEdit(); populateCloudClassSelector(); }
-            if (t === 'headmaster') loadHeadmasterGlobalDashboard();
+            if (t === 'settings') renderStudentsEdit();
         }
 
         function setToday() {
-            const today = localISODate();
-            selectedDateInput.value = today;
-            document.getElementById('topDateBadge').textContent = formatFullDateIndonesian(today);
-            document.getElementById('dailyDateTitle').textContent = formatFullDateIndonesian(today);
+            selectedDateInput.value = localISODate();
             renderDailyCards();
         }
 
         function changeDate(days) {
             const current = new Date(selectedDateInput.value || localISODate());
             current.setDate(current.getDate() + days);
-            const iso = localISODate(current);
-            selectedDateInput.value = iso;
-            document.getElementById('topDateBadge').textContent = formatFullDateIndonesian(iso);
-            document.getElementById('dailyDateTitle').textContent = formatFullDateIndonesian(iso);
+            selectedDateInput.value = localISODate(current);
             renderDailyCards();
-        }
-
-        function markAllHadir() {
-            const date = selectedDateInput.value;
-            const groupFilter = document.getElementById('dailyGroupFilter').value;
-            if (!attendanceData[date]) attendanceData[date] = {};
-            
-            students.forEach(s => {
-                if (groupFilter === 'ALL' || (s.group || 'Umum') === groupFilter) {
-                    if (!attendanceData[date][s.id]) attendanceData[date][s.id] = { status: 'H', mood: 'Kondusif', note: '' };
-                    attendanceData[date][s.id].status = 'H';
-                }
-            });
-            syncToFirebase('attendance', attendanceData);
-            renderDailyCards();
-            showToast("Semua siswa ditandai Hadir!");
         }
 
         function renderDailyCards() {
             const date = selectedDateInput.value;
             const container = document.getElementById('studentCardsContainer');
-            const query = (document.getElementById('searchStudentInput')?.value || '').toLowerCase();
-            const groupFilter = document.getElementById('dailyGroupFilter').value;
             container.innerHTML = '';
 
-            let filtered = students;
-            if (groupFilter !== 'ALL') filtered = filtered.filter(s => (s.group || 'Umum') === groupFilter);
-            if (query) filtered = filtered.filter(s => s.name.toLowerCase().includes(query));
-
-            document.getElementById('dailyStudentCountCount').textContent = `${filtered.length} Murid`;
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border border-dashed text-xs text-slate-400 space-y-2"><p class="font-bold text-slate-600">Belum ada siswa pada daftar/kelompok ini.</p><p>Tambahkan siswa melalui menu <b>Pengaturan & JSON</b> di samping.</p></div>`;
+            if (students.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 bg-white rounded-2xl border border-dashed text-xs text-slate-400">Belum ada daftar siswa. Tambahkan melalui menu Pengaturan.</div>`;
                 return;
             }
 
-            filtered.forEach(student => {
+            students.forEach(student => {
                 const rec = attendanceData[date]?.[student.id] || { status: 'H', mood: 'Kondusif', note: '' };
-                const nisStr = String(student.nis || student.id).padStart(3, '0');
-                const studentGroup = student.group || 'Umum';
-                
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-2xl p-4 border border-slate-200 space-y-3 shadow-sm';
                 card.innerHTML = `
                     <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-xs shadow">${nisStr}</div>
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-sm sm:text-base">${student.name}</h3>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-[11px] text-slate-400 font-semibold">NIS: ${nisStr}</span>
-                                    <span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-md text-[10px] font-bold">${studentGroup}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <button onclick="sendWhatsApp(${student.id})" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center space-x-1 transition">
-                            <i class="fa-brands fa-whatsapp text-sm text-emerald-600"></i>
-                            <span>Kirim WA</span>
-                        </button>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">STATUS KEHADIRAN</label>
-                        <div class="grid grid-cols-4 gap-2 text-xs">
-                            ${[ { key: 'H', label: 'Hadir (H)' }, { key: 'S', label: 'Sakit (S)' }, { key: 'I', label: 'Izin (I)' }, { key: 'A', label: 'Alfa (A)' } ].map(st => `
-                                <button onclick="saveAttendance(${student.id}, '${st.key}')" class="py-2.5 rounded-xl font-bold border transition text-center ${rec.status === st.key ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                                    ${st.label}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">KONDISI / PERILAKU</label>
-                        <div class="flex flex-wrap gap-1.5">
-                            ${MOOD_OPTIONS.map(m => `
-                                <button onclick="saveAttendanceMood(${student.id}, '${m.label}')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center space-x-1 ${rec.mood === m.label ? 'bg-emerald-100 text-emerald-800 border-emerald-400 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                                    <span>${m.icon}</span>
-                                    <span>${m.label}</span>
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">CATATAN HARIAN</label>
-                        <input type="text" value="${rec.note || ''}" placeholder="Tuliskan catatan harian..." onchange="saveAttendanceNote(${student.id}, this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium">
+                        <h3 class="font-bold text-slate-800 text-sm">${student.name} (NIS: ${student.nis || '-'})</h3>
+                        <span class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold">${rec.status || 'Hadir'}</span>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        function sendWhatsApp(studentId) {
-            const dateStr = selectedDateInput.value;
-            const student = students.find(s => s.id === studentId);
-            if (!student) return;
-
-            const rec = attendanceData[dateStr]?.[student.id] || { status: 'H', mood: 'Kondusif', note: '' };
-            const statusMap = { 'H': 'Hadir (H)', 'S': 'Sakit (S)', 'I': 'Izin (I)', 'A': 'Alfa (A)' };
-
-            const fullFormattedDate = formatFullDateIndonesian(dateStr);
-            const schoolUpper = (schoolConfig.schoolName || 'SLBN 1 KULON PROGO').toUpperCase();
-            const className = schoolConfig.className || 'Kelas III';
-            const teacherName = schoolConfig.teacherName || 'Agung Lian Prasetyadi, S.Pd';
-
-            let formattedNote = rec.note && rec.note.trim() !== '' ? `_${rec.note.trim()}_` : '-';
-
-            let msg = `Yth. Orang Tua/Wali dari ${student.name},\n*Laporan Presensi ${schoolUpper}*\n\n📅 Tanggal: ${fullFormattedDate}\n📌 Status Kehadiran: *${statusMap[rec.status] || 'Hadir (H)'}*\n`;
-            if (rec.mood) msg += `🧠 Kondisi: ${rec.mood}\n`;
-            msg += `📝 Catatan: ${formattedNote}\n\nPengajar ${className}:\n${teacherName}`;
-
-            let phone = student.phone ? student.phone.replace(/[^0-9]/g, '') : '';
-            if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-
-            window.open(phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        function saveAttendance(studentId, status) {
-            const date = selectedDateInput.value;
-            if (!attendanceData[date]) attendanceData[date] = {};
-            if (!attendanceData[date][studentId]) attendanceData[date][studentId] = { status: '', mood: 'Kondusif', note: '' };
-            
-            if (attendanceData[date][studentId].status === status) {
-                attendanceData[date][studentId].status = '';
-                showToast("Status dibatalkan");
-            } else {
-                attendanceData[date][studentId].status = status;
-                showToast("Presensi tersimpan!");
-            }
-
-            syncToFirebase('attendance', attendanceData);
-            renderDailyCards();
-        }
-
-        function saveAttendanceMood(studentId, mood) {
-            const date = selectedDateInput.value;
-            if (!attendanceData[date]) attendanceData[date] = {};
-            if (!attendanceData[date][studentId]) attendanceData[date][studentId] = { status: 'H', mood: 'Kondusif', note: '' };
-            
-            if (attendanceData[date][studentId].mood === mood) {
-                attendanceData[date][studentId].mood = '';
-                showToast("Kondisi dibatalkan");
-            } else {
-                attendanceData[date][studentId].mood = mood;
-                showToast("Kondisi tersimpan!");
-            }
-
-            syncToFirebase('attendance', attendanceData);
-            renderDailyCards();
-        }
-
-        function saveAttendanceNote(studentId, note) {
-            const date = selectedDateInput.value;
-            if (!attendanceData[date]) attendanceData[date] = {};
-            if (!attendanceData[date][studentId]) attendanceData[date][studentId] = { status: 'H', mood: 'Kondusif', note: '' };
-            attendanceData[date][studentId].note = note;
-            syncToFirebase('attendance', attendanceData);
-            showToast("Catatan tersimpan!");
-        }
-
         function saveSchoolConfigToStorage() {
             schoolConfig.schoolName = document.getElementById('cfgSchoolName').value;
             schoolConfig.className = document.getElementById('cfgClassName').value;
             schoolConfig.teacherName = document.getElementById('cfgTeacherName').value;
-            schoolConfig.teacherNip = document.getElementById('cfgTeacherNip').value;
             schoolConfig.headmasterName = document.getElementById('cfgHeadmasterName').value;
-            schoolConfig.headmasterNip = document.getElementById('cfgHeadmasterNip').value;
 
-            syncToFirebase('config', schoolConfig);
+            saveLocalCache();
             applyConfigToDOM();
             showToast("Pengaturan tersimpan!");
         }
@@ -1759,266 +828,50 @@
         function renderStudentsEdit() {
             const container = document.getElementById('studentsEditContainer');
             container.innerHTML = '';
-
-            if (students.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 border border-dashed rounded-xl text-xs text-slate-400">Belum ada siswa yang ditambahkan. Klik tombol "+ Tambah Siswa" di atas atau tarik data dari Wali Kelas.</div>`;
-                return;
-            }
-
             students.forEach((s, idx) => {
                 const card = document.createElement('div');
-                card.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-3 sm:p-4 space-y-2';
-                card.innerHTML = `
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                        <div class="sm:col-span-4">
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1">Nama Siswa #${idx + 1}</label>
-                            <input type="text" value="${s.name}" id="st-name-${s.id}" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold bg-white text-slate-800" placeholder="Nama Siswa">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1">NIS / NIPD</label>
-                            <input type="text" value="${s.nis \vert{}\vert{} ''}" id="st-nis-${s.id}" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold bg-white text-slate-800" placeholder="001">
-                        </div>
-                        <div class="sm:col-span-3">
-                            <label class="block text-[10px] font-bold text-amber-800 mb-1">Kelompok / Mapel</label>
-                            <input type="text" value="${s.group \vert{}\vert{} 'Umum'}" id="st-group-${s.id}" class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold bg-amber-50 text-amber-900" placeholder="cth: Tata Boga / Pertanian">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1">No. WA Wali</label>
-                            <input type="text" value="${s.phone \vert{}\vert{} ''}" id="st-phone-${s.id}" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold bg-white text-slate-800" placeholder="628123456789">
-                        </div>
-                        <div class="sm:col-span-1 flex items-end justify-end pt-3 sm:pt-0">
-                            <button onclick="removeStudent(${s.id})" title="Hapus Siswa" class="w-full sm:w-10 h-10 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl flex items-center justify-center transition">
-                                <i class="fa-solid fa-trash-can text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
+                card.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-3 flex gap-2 items-center';
+                card.innerHTML = `<input type="text" value="${s.name}" id="st-name-${s.id}" class="flex-1 border rounded-xl px-3 py-1.5 text-xs font-bold"><button onclick="removeStudent(${s.id})" class="text-rose-600 font-bold text-xs px-2">Hapus</button>`;
                 container.appendChild(card);
             });
         }
 
         function addNewStudent() {
             const newId = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
-            students.push({ id: newId, name: ``, nis: '', group: 'Umum', phone: '' });
+            students.push({ id: newId, name: `Siswa Baru ${newId}`, nis: `00${newId}` });
+            saveLocalCache();
             renderStudentsEdit();
-            updateGroupDropdowns();
-            populateStudentFilter();
+            renderDailyCards();
         }
 
-        function removeStudent(studentId) {
-            if (confirm("Apakah Anda yakin ingin menghapus siswa ini?")) {
-                students = students.filter(s => s.id !== studentId);
-                renderStudentsEdit();
-                updateGroupDropdowns();
-                populateStudentFilter();
-            }
+        function removeStudent(id) {
+            students = students.filter(s => s.id !== id);
+            saveLocalCache();
+            renderStudentsEdit();
+            renderDailyCards();
         }
 
         function saveStudentSettingsToStorage() {
             students.forEach(s => {
-                const elN = document.getElementById(`st-name-${s.id}`);
-                const elNi = document.getElementById(`st-nis-${s.id}`);
-                const elGr = document.getElementById(`st-group-${s.id}`);
-                const elPh = document.getElementById(`st-phone-${s.id}`);
-                if (elN) s.name = elN.value;
-                if (elNi) s.nis = elNi.value;
-                if (elGr) s.group = elGr.value || 'Umum';
-                if (elPh) s.phone = elPh.value;
+                const el = document.getElementById(`st-name-${s.id}`);
+                if (el) s.name = el.value;
             });
-            syncToFirebase('students', students);
-            updateGroupDropdowns();
+            saveLocalCache();
             renderDailyCards();
-            populateStudentFilter();
-            showToast("Daftar siswa & kelompok tersimpan!");
+            showToast("Siswa tersimpan!");
         }
 
         function renderMonthlyTable() {
-            const monthStr = selectedMonthInput.value;
-            if (!monthStr) return;
-            const [year, month] = monthStr.split('-').map(Number);
-            const daysInMonth = new Date(year, month, 0).getDate();
-            const groupFilter = document.getElementById('monthlyGroupFilter').value;
-
-            let totH = 0, totS = 0, totI = 0, totA = 0;
-
-            const daysHeaderRow = document.getElementById('daysHeaderRow');
-            let headerHTML = `<th class="p-1.5 border text-center">NO</th><th class="p-1.5 border text-center">NIS</th><th class="p-1.5 border">NAMA SISWA</th><th class="p-1.5 border text-center">MAPEL/KELOMPOK</th>`;
-            for (let d = 1; d <= daysInMonth; d++) headerHTML += `<th class="p-0.5 border text-center w-6 text-[10px]">${d}</th>`;
-            headerHTML += `<th class="p-1 border text-center bg-emerald-100 text-emerald-800">H</th><th class="p-1 border text-center bg-amber-100 text-amber-800">S</th><th class="p-1 border text-center bg-sky-100 text-sky-800">I</th><th class="p-1 border text-center bg-rose-100 text-rose-800">A</th><th class="p-1 border text-center">%</th>`;
-            daysHeaderRow.innerHTML = headerHTML;
-
-            const monthlyTableBody = document.getElementById('monthlyTableBody');
-            monthlyTableBody.innerHTML = '';
-
-            let filteredStudents = students;
-            if (groupFilter !== 'ALL') filteredStudents = filteredStudents.filter(s => (s.group || 'Umum') === groupFilter);
-
-            filteredStudents.forEach((student, index) => {
-                const nisStr = String(student.nis || student.id).padStart(3, '0');
-                let hCount = 0, sCount = 0, iCount = 0, aCount = 0;
-
-                let rowHTML = `<tr>
-                    <td class="p-1.5 border text-center font-bold">${index + 1}</td>
-                    <td class="p-1.5 border text-center font-bold text-slate-500">${nisStr}</td>
-                    <td class="p-1.5 border font-bold text-slate-800">${student.name}</td>
-                    <td class="p-1.5 border text-center font-bold text-amber-800 bg-amber-50">${student.group || 'Umum'}</td>`;
-                
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const fullDate = `${monthStr}-${String(d).padStart(2, '0')}`;
-                    const st = attendanceData[fullDate]?.[student.id]?.status || '-';
-                    let bgClass = 'text-slate-300';
-
-                    if (st === 'H') { bgClass = 'bg-emerald-50 text-emerald-700 font-black'; hCount++; }
-                    else if (st === 'S') { bgClass = 'bg-amber-100 text-amber-800 font-black'; sCount++; }
-                    else if (st === 'I') { bgClass = 'bg-sky-100 text-sky-800 font-black'; iCount++; }
-                    else if (st === 'A') { bgClass = 'bg-rose-100 text-rose-800 font-black'; aCount++; }
-
-                    rowHTML += `<td class="p-0.5 border text-center ${bgClass}">${st}</td>`;
-                }
-
-                totH += hCount; totS += sCount; totI += iCount; totA += aCount;
-                const totalActive = hCount + sCount + iCount + aCount;
-                const pct = totalActive > 0 ? Math.round((hCount / totalActive) * 100) : 0;
-
-                rowHTML += `<td class="p-1 border text-center font-black text-emerald-700 bg-emerald-50/50">${hCount}</td><td class="p-1 border text-center font-black text-amber-700 bg-amber-50/50">${sCount}</td><td class="p-1 border text-center font-black text-sky-700 bg-sky-50/50">${iCount}</td><td class="p-1 border text-center font-black text-rose-700 bg-rose-50/50">${aCount}</td><td class="p-1 border text-center font-black text-slate-800">${pct}%</td></tr>`;
-
-                monthlyTableBody.innerHTML += rowHTML;
-            });
-
-            document.getElementById('statHadir').textContent = totH;
-            document.getElementById('statSakit').textContent = totS;
-            document.getElementById('statIzin').textContent = totI;
-            document.getElementById('statAlfa').textContent = totA;
-        }
-
-        function populateStudentFilter() {
-            const sel = document.getElementById('sensoryStudentFilter');
-            sel.innerHTML = `<option value="ALL">-- Semua Siswa --</option>`;
-            students.forEach(s => {
-                sel.innerHTML += `<option value="${s.id}">${s.name || ('Siswa ID ' + s.id)} (${s.group || 'Umum'})</option>`;
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = '';
+            students.forEach((s, idx) => {
+                tbody.innerHTML += `<tr><td class="p-2 border text-center">${idx + 1}</td><td class="p-2 border font-bold">${s.name}</td><td class="p-2 border text-center font-bold text-emerald-600">Hadir</td></tr>`;
             });
         }
 
         function renderSensoryJournal() {
-            const listContainer = document.getElementById('monthlyNotesList');
-            const monthStr = selectedMonthInput.value;
-            const filterId = document.getElementById('sensoryStudentFilter').value;
-            listContainer.innerHTML = '';
-            let hasEntries = false;
-
-            Object.keys(attendanceData).sort().reverse().forEach(date => {
-                if (date.startsWith(monthStr)) {
-                    students.forEach(student => {
-                        if (filterId !== 'ALL' && String(student.id) !== filterId) return;
-
-                        const rec = attendanceData[date][student.id];
-                        if (rec && (rec.note || rec.mood)) {
-                            hasEntries = true;
-                            const divCard = document.createElement('div');
-                            divCard.className = 'bg-white rounded-2xl p-4 border border-slate-200 text-xs space-y-2 shadow-sm';
-                            divCard.innerHTML = `
-                                <div class="flex justify-between items-center border-b pb-2">
-                                    <div>
-                                        <span class="text-slate-900 font-extrabold text-sm sm:text-base">${student.name}</span>
-                                        <span class="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold">${student.group || 'Umum'}</span>
-                                    </div>
-                                    <span class="text-slate-500 font-semibold text-xs">${formatFullDateIndonesian(date)}</span>
-                                    ${rec.mood ? `<span class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-[11px]">${rec.mood}</span>` : ''}
-                                </div>
-                                ${rec.note ? `<p class="text-slate-700 leading-relaxed font-medium pt-1">${rec.note}</p>` : '<p class="text-slate-400 italic">Tidak ada catatan tertulis.</p>'}
-                            `;
-                            listContainer.appendChild(divCard);
-                        }
-                    });
-                }
-            });
-
-            if (!hasEntries) {
-                listContainer.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">Belum ada catatan jurnal pada periode bulan ini.</p>`;
-            }
-        }
-
-        function setupPrintData(type) {
-            const teacherName = schoolConfig.teacherName || 'Agung Lian Prasetyadi, S.Pd';
-            const teacherNip = schoolConfig.teacherNip ? `NIP. ${schoolConfig.teacherNip}` : '';
-            const hmName = schoolConfig.headmasterName || 'Titin Nurhayati, S.Psi., M.Pd';
-            const hmNip = schoolConfig.headmasterNip ? `NIP. ${schoolConfig.headmasterNip}` : '';
-
-            const classNameUpper = (schoolConfig.className || 'KELAS III').toUpperCase();
-            const schoolNameUpper = (schoolConfig.schoolName || 'SLBN 1 KULON PROGO').toUpperCase();
-            const formattedMonthText = formatMonthYearIndonesian(selectedMonthInput.value);
-
-            const roleLabels = { 'GURU_KELAS': 'Guru Kelas', 'GURU_MAPEL': 'Guru Mata Pelajaran', 'KEPALA_SEKOLAH': 'Kepala Sekolah' };
-
-            if (type === 'monthly') {
-                const printDateStr = printDateMonthlyInput.value || localISODate();
-                const formattedPrintDate = formatPrintDateIndonesian(printDateStr);
-                const groupFilter = document.getElementById('monthlyGroupFilter').value;
-                
-                let titleText = `REKAPITULASI PRESENSI - ${classNameUpper}`;
-                if (groupFilter !== 'ALL') titleText += ` (${groupFilter.toUpperCase()})`;
-
-                document.getElementById('printMonthlyTitle').textContent = titleText;
-                document.getElementById('printMonthlySchool').textContent = schoolNameUpper;
-                document.getElementById('printMonthPeriod').textContent = formattedMonthText;
-                document.getElementById('printMonthlyHeadmasterLabel').textContent = `Kepala ${schoolNameUpper}`;
-                document.getElementById('printMonthlyTeacherLabel').textContent = roleLabels[currentUserRole] || 'Guru Kelas / Mapel';
-
-                document.getElementById('printTeacherName').textContent = teacherName;
-                document.getElementById('printTeacherNip').textContent = teacherNip;
-                document.getElementById('printHeadmasterName').textContent = hmName;
-                document.getElementById('printHeadmasterNip').textContent = hmNip;
-                document.getElementById('printDateToday').textContent = formattedPrintDate;
-            } else if (type === 'sensory') {
-                const printDateStr = printDateSensoryInput.value || localISODate();
-                const formattedPrintDate = formatPrintDateIndonesian(printDateStr);
-
-                const filterId = document.getElementById('sensoryStudentFilter').value;
-                let sensoryTitleText = `LAPORAN JURNAL PERKEMBANGAN SISWA - ${classNameUpper}`;
-                
-                if (filterId !== 'ALL') {
-                    const targetStudent = students.find(s => String(s.id) === filterId);
-                    if (targetStudent) sensoryTitleText = `LAPORAN JURNAL PERKEMBANGAN (${targetStudent.name.toUpperCase()}) - ${classNameUpper}`;
-                }
-
-                document.getElementById('printSensoryTitle').textContent = sensoryTitleText;
-                document.getElementById('printSensorySchool').textContent = schoolNameUpper;
-                document.getElementById('printSensoryMonth').textContent = formattedMonthText;
-                document.getElementById('printSensoryHeadmasterLabel').textContent = `Kepala ${schoolNameUpper}`;
-                document.getElementById('printSensoryTeacherLabel').textContent = roleLabels[currentUserRole] || 'Guru Kelas / Mapel';
-
-                document.getElementById('printSensoryTRName').textContent = teacherName;
-                document.getElementById('printSensoryTRNip').textContent = teacherNip;
-                document.getElementById('printSensoryHMName').textContent = hmName;
-                document.getElementById('printSensoryHMNip').textContent = hmNip;
-                document.getElementById('printSensoryDateToday').textContent = formattedPrintDate;
-            }
-        }
-
-        function printMonthlyReport() {
-            switchTab('monthly');
-            setupPrintData('monthly');
-            setTimeout(() => { window.print(); }, 100);
-        }
-
-        function printSensoryReport() {
-            switchTab('sensory');
-            setupPrintData('sensory');
-            setTimeout(() => { window.print(); }, 100);
-        }
-
-        function exportCSV() {
-            let csv = "No,NIS,Nama Siswa,Kelompok/Mapel,Hadir,Sakit,Izin,Alfa,Persentase\n";
-            students.forEach((s, idx) => {
-                const nisStr = String(s.nis || s.id).padStart(3, '0');
-                csv += `"${idx+1}","${nisStr}","${s.name}","${s.group || 'Umum'}",0,0,0,0,"0%"\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', `Rekap_Presensi_${selectedMonthInput.value}.csv`);
-            a.click();
+            const container = document.getElementById('monthlyNotesList');
+            container.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">Pilih tanggal pada presensi harian untuk menuliskan catatan perkembangan siswa.</div>`;
         }
 
         function showToast(msg) {
