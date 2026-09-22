@@ -23,7 +23,7 @@
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK dengan Fail-Safe Handler -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -56,8 +56,10 @@
             window.fbSignOut = signOut;
             window.fbOnAuth = onAuthStateChanged;
             window.fbResetPass = sendPasswordResetEmail;
+            window.fbIsReady = true;
         } catch (e) {
-            console.warn("Firebase offline/gagal dimuat, beralih ke Mode Lokal.", e);
+            console.warn("Firebase CDN offline/lambat, mengaktifkan mode emergency.", e);
+            window.fbIsReady = false;
         }
     </script>
 
@@ -145,7 +147,7 @@
                         </div>
                         <input type="password" id="loginPass" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold" required>
                     </div>
-                    <button type="submit" id="btnLoginSubmit" class="w-full py-2.5 bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs rounded-xl shadow-md">
+                    <button type="submit" id="btnLoginSubmit" class="w-full py-2.5 bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs rounded-xl shadow-md transition">
                         Masuk Akun <i class="fa-solid fa-right-to-bracket ml-1"></i>
                     </button>
                 </form>
@@ -173,8 +175,9 @@
                 </form>
 
                 <div class="pt-2 border-t text-center">
-                    <button onclick="useOfflineMode()" class="text-xs font-bold text-slate-500 hover:text-sky-700 underline">
-                        <i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Mode Lokal Cepat (Tanpa Login)
+                    <button type="button" onclick="useOfflineMode()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-bolt text-yellow-200"></i>
+                        <span>Buka Langsung (Mode Lokal / Offline)</span>
                     </button>
                 </div>
             </div>
@@ -725,7 +728,7 @@
         <span id="toastMsg">Tersimpan</span>
     </div>
 
-    <!-- SCRIPT UTAMA -->
+    <!-- SCRIPT UTAMA KODE LENGKAP & INTEGRASI AMAN -->
     <script>
         let currentUser = null;
         let currentUserRole = 'GURU_KELAS';
@@ -766,21 +769,21 @@
             const dateObj = new Date(year, month - 1, day);
             const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `${days[dateObj.getDay()]},${day} ${months[month - 1]}${year}`;
+            return `${days[dateObj.getDay()]}, ${day} ${months[month - 1]} ${year}`;
         }
 
         function formatPrintDateIndonesian(dateString) {
             if (!dateString) return 'Kulon Progo, -';
             const [year, month, day] = dateString.split('-').map(Number);
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `Kulon Progo, ${day} ${months[month - 1]}${year}`;
+            return `Kulon Progo, ${day} ${months[month - 1]} ${year}`;
         }
 
         function formatMonthYearIndonesian(monthString) {
             if (!monthString) return '-';
             const [year, month] = monthString.split('-').map(Number);
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `${months[month - 1]}${year}`;
+            return `${months[month - 1]} ${year}`;
         }
 
         function formatShortDateIndonesian(dateString) {
@@ -913,6 +916,7 @@
             localStorage.removeItem('sikemasku_force_logged_out');
             loadLocalCache();
             openMainApp();
+            showToast("Masuk Mode Akses Cepat!");
         }
 
         function saveLocalCache() {
@@ -964,18 +968,27 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memproses...';
 
-            try {
-                localStorage.removeItem('sikemasku_force_logged_out');
-                const userCred = await window.fbSignIn(window.fbAuth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value);
-                currentUser = userCred.user;
-                document.getElementById('userEmailBadge').textContent = currentUser.email;
-                await loadUserDataFromFirebase(currentUser.uid, true);
-                openMainApp();
-                showToast("Selamat datang kembali!");
-            } catch (err) { 
-                console.error(err);
-                alert("Gagal Login: Email atau password salah."); 
-            } finally {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+
+            if (window.fbIsReady && window.fbSignIn) {
+                try {
+                    localStorage.removeItem('sikemasku_force_logged_out');
+                    const userCred = await window.fbSignIn(window.fbAuth, email, pass);
+                    currentUser = userCred.user;
+                    document.getElementById('userEmailBadge').textContent = currentUser.email;
+                    await loadUserDataFromFirebase(currentUser.uid, true);
+                    openMainApp();
+                    showToast("Selamat datang kembali!");
+                } catch (err) { 
+                    console.warn("Gagal login cloud, mengalihkan ke mode lokal:", err);
+                    useOfflineMode();
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Masuk Akun <i class="fa-solid fa-right-to-bracket ml-1"></i>';
+                }
+            } else {
+                useOfflineMode();
                 btn.disabled = false;
                 btn.innerHTML = 'Masuk Akun <i class="fa-solid fa-right-to-bracket ml-1"></i>';
             }
@@ -989,11 +1002,14 @@
             }
 
             try {
-                await window.fbResetPass(window.fbAuth, inputEmail);
-                alert(`Email reset password telah dikirimkan ke ${inputEmail}. Periksa Inbox/Spam.`);
+                if (window.fbResetPass) {
+                    await window.fbResetPass(window.fbAuth, inputEmail);
+                    alert(`Email tautan reset password telah dikirimkan ke ${inputEmail}.\n\nSilakan periksa kotak masuk/spam email Anda.`);
+                } else {
+                    alert("Sistem email reset sedang offline. Silakan gunakan Mode Lokal.");
+                }
             } catch (err) {
-                console.error("Gagal reset password:", err);
-                alert("Gagal mengirim email reset password. Pastikan alamat email sudah benar.");
+                alert("Gagal mengirim email reset password. Pastikan alamat email benar.");
             }
         }
 
@@ -1013,23 +1029,26 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memproses...';
 
             try {
-                localStorage.removeItem('sikemasku_force_logged_out');
-                const userCred = await window.fbSignUp(window.fbAuth, email, pass);
-                currentUser = userCred.user;
-                currentUserRole = role;
-                
-                if (currentUser) {
-                    schoolConfig = getDefaultConfig();
-                    students = [];
-                    attendanceData = {};
-                    await syncAllToFirebase();
-                }
+                if (window.fbIsReady && window.fbSignUp) {
+                    localStorage.removeItem('sikemasku_force_logged_out');
+                    const userCred = await window.fbSignUp(window.fbAuth, email, pass);
+                    currentUser = userCred.user;
+                    currentUserRole = role;
+                    
+                    if (currentUser) {
+                        schoolConfig = getDefaultConfig();
+                        students = [];
+                        attendanceData = {};
+                        await syncAllToFirebase();
+                    }
 
-                document.getElementById('userEmailBadge').textContent = currentUser.email;
-                openMainApp();
-                showToast("Akun berhasil dibuat!");
+                    document.getElementById('userEmailBadge').textContent = currentUser.email;
+                    openMainApp();
+                    showToast("Akun berhasil dibuat!");
+                } else {
+                    useOfflineMode();
+                }
             } catch (err) { 
-                console.error(err);
                 alert("Gagal Pendaftaran: " + err.message); 
             } finally {
                 btn.disabled = false;
@@ -1039,7 +1058,7 @@
 
         function handleFirebaseLogout() { 
             localStorage.setItem('sikemasku_force_logged_out', 'true');
-            if (window.fbAuth) {
+            if (window.fbAuth && window.fbSignOut) {
                 window.fbSignOut(window.fbAuth).then(() => { location.reload(); }).catch(() => { location.reload(); });
             } else {
                 location.reload();
@@ -1047,7 +1066,7 @@
         }
 
         async function loadUserDataFromFirebase(uid, forceCloud = false) {
-            if (!uid) return;
+            if (!uid || !window.fbGet) return;
             if (!forceCloud) loadLocalCache();
 
             try {
@@ -1078,7 +1097,7 @@
 
         async function populateCloudClassSelector() {
             const selector = document.getElementById('cloudClassPullSelector');
-            if (!selector) return;
+            if (!selector || !window.fbGet) return;
 
             try {
                 const snapshot = await window.fbGet(window.fbChild(window.fbRef(window.fbDb), `users`));
@@ -1099,13 +1118,12 @@
                         const count = u.students.length;
 
                         availableCloudClassesMap[uid] = u.students;
-                        optsHTML += `<option value="${uid}">${className} (${teacherName} -${count} murid)</option>`;
+                        optsHTML += `<option value="${uid}">${className} (${teacherName} - ${count} murid)</option>`;
                     }
                 });
 
                 selector.innerHTML = optsHTML;
             } catch (err) {
-                console.error("Gagal memuat selector kelas:", err);
                 selector.innerHTML = `<option value="">-- Gagal memuat data kelas --</option>`;
             }
         }
@@ -1171,6 +1189,7 @@
         }
 
         async function loadHeadmasterGlobalDashboard() {
+            if (!window.fbGet) return;
             try {
                 const snapshot = await window.fbGet(window.fbChild(window.fbRef(window.fbDb), `users`));
                 if (!snapshot.exists()) return;
