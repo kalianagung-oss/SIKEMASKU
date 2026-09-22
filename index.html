@@ -769,21 +769,21 @@
             const dateObj = new Date(year, month - 1, day);
             const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `${days[dateObj.getDay()]}, ${day} ${months[month - 1]} ${year}`;
+            return `${days[dateObj.getDay()]},${day} ${months[month - 1]}${year}`;
         }
 
         function formatPrintDateIndonesian(dateString) {
             if (!dateString) return 'Kulon Progo, -';
             const [year, month, day] = dateString.split('-').map(Number);
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `Kulon Progo, ${day} ${months[month - 1]} ${year}`;
+            return `Kulon Progo, ${day} ${months[month - 1]}${year}`;
         }
 
         function formatMonthYearIndonesian(monthString) {
             if (!monthString) return '-';
             const [year, month] = monthString.split('-').map(Number);
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            return `${months[month - 1]} ${year}`;
+            return `${months[month - 1]}${year}`;
         }
 
         function formatShortDateIndonesian(dateString) {
@@ -1118,7 +1118,7 @@
                         const count = u.students.length;
 
                         availableCloudClassesMap[uid] = u.students;
-                        optsHTML += `<option value="${uid}">${className} (${teacherName} - ${count} murid)</option>`;
+                        optsHTML += `<option value="${uid}">${className} (${teacherName} -${count} murid)</option>`;
                     }
                 });
 
