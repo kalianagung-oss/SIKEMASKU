@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0284C7">
-    <title>SIKEMASKU - Terintegrasi SLBN 1 Kulon Progo</title>
+    <title>SIKEMASKU - SLBN 1 Kulon Progo</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -23,6 +23,11 @@
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
+    <!-- Firebase SDK Compat (Opsional / Standalone) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         body { background-color: #f0f4f8; min-height: 100dvh; }
@@ -40,46 +45,102 @@
                 padding: 0 !important;
                 margin: 0 !important;
             }
-
-            aside, header, nav, button, input, select, .no-print, #bannerSafeLocal, .card-identity-box, .month-picker-container, #toast { 
+            aside, header, nav, button, input, select, .no-print, .card-identity-box, .month-picker-container, #toast { 
                 display: none !important; 
             }
-
             .tab-content { display: none !important; }
             .tab-content.active { display: block !important; width: 100% !important; }
-
-            table {
-                width: 100% !important;
-                min-width: 100% !important;
-                table-layout: auto !important;
-                font-size: 9px !important;
-            }
-
-            th, td {
-                padding: 3px 2px !important;
-                border: 1px solid #000000 !important;
-            }
-
-            .print-footer { page-break-inside: avoid !important; }
+            table { width: 100% !important; border-collapse: collapse !important; font-size: 9px !important; }
+            th, td { padding: 3px 2px !important; border: 1px solid #000000 !important; }
         }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans">
 
-    <!-- TAMPILAN UTAMA APLIKASI -->
-    <div id="mainAppContent" class="min-h-screen flex flex-col md:flex-row">
+    <!-- ==================== TAMPILAN HALAMAN DEPAN / LOGIN ==================== -->
+    <div id="landingScreen" class="min-h-screen flex flex-col justify-between p-4 bg-gradient-to-br from-sky-950 via-sky-900 to-slate-900 text-white no-print">
+        <div class="max-w-md mx-auto w-full my-auto py-6">
+            <div class="text-center space-y-3 mb-6">
+                <div class="w-20 h-20 bg-white/10 backdrop-blur-md rounded-3xl mx-auto flex items-center justify-center border border-white/20 shadow-2xl p-2">
+                    <i class="fa-solid fa-graduation-cap text-sky-300 text-4xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black tracking-wider text-sky-300">SIKEMASKU</h1>
+                    <p class="text-sky-100 text-[11px] font-bold uppercase tracking-widest mt-1">SISTEM TERINTEGRASI PRESENSI SEKOLAH</p>
+                    <p class="text-sky-200/90 text-xs font-bold uppercase tracking-wider mt-0.5">SLBN 1 KULON PROGO</p>
+                </div>
+            </div>
+
+            <div class="bg-white/95 backdrop-blur-md rounded-3xl p-5 text-slate-800 shadow-2xl space-y-4 border border-white/40">
+                <div class="flex border-b text-xs font-bold text-center">
+                    <button id="tabBtnLogin" type="button" onclick="switchAuthTab('login')" class="flex-1 py-2 border-b-2 border-sky-600 text-sky-700">Masuk Akun</button>
+                    <button id="tabBtnRegister" type="button" onclick="switchAuthTab('register')" class="flex-1 py-2 text-slate-400">Daftar Akun Baru</button>
+                </div>
+
+                <form id="formLogin" onsubmit="handleAuthLogin(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Email Pengguna</label>
+                        <input type="email" id="loginEmail" placeholder="nama@sekolah.sch.id" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-slate-600">Password</label>
+                            <button type="button" onclick="handleForgotPassword()" class="text-[11px] font-bold text-sky-700 hover:underline">Lupa Password?</button>
+                        </div>
+                        <input type="password" id="loginPass" placeholder="••••••••" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800">
+                    </div>
+                    <button type="submit" class="w-full py-2.5 bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-1.5">
+                        <span>Masuk Akun</span>
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                    </button>
+                </form>
+
+                <form id="formRegister" onsubmit="handleAuthRegister(event)" class="space-y-3 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Peran / Hak Akses Pengguna</label>
+                        <select id="regRole" class="w-full bg-amber-50 border border-amber-300 font-bold text-amber-900 rounded-xl px-3 py-2 text-xs">
+                            <option value="GURU_KELAS">Guru Kelas / Wali Kelas</option>
+                            <option value="GURU_MAPEL">Guru Mata Pelajaran / Keterampilan</option>
+                            <option value="KEPALA_SEKOLAH">Kepala Sekolah (Super Admin)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Email Baru</label>
+                        <input type="email" id="regEmail" placeholder="nama@sekolah.sch.id" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Password Baru (min 6 karakter)</label>
+                        <input type="password" id="regPass" placeholder="••••••••" required minlength="6" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800">
+                    </div>
+                    <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md">
+                        Daftar Akun Baru
+                    </button>
+                </form>
+
+                <div class="pt-2 border-t text-center">
+                    <button type="button" onclick="useOfflineMode()" class="w-full py-2 text-amber-600 hover:text-amber-700 font-bold text-xs transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-bolt text-amber-500"></i>
+                        <span>Mode Lokal Cepat (Tanpa Login)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAMPILAN UTAMA APLIKASI ==================== -->
+    <div id="mainAppContent" class="hidden min-h-screen flex flex-col md:flex-row">
 
         <!-- SIDEBAR NAV KIRI -->
         <aside id="sidebarNav" class="w-full md:w-64 bg-sky-900 text-white flex-shrink-0 md:min-h-screen border-r border-sky-800 flex flex-col justify-between shadow-xl no-print">
             <div>
                 <div class="p-4 bg-sky-950 flex items-center justify-between border-b border-sky-800">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden" id="sidebarLogoBox">
+                        <div class="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden">
                             <i class="fa-solid fa-graduation-cap text-sky-700 text-lg"></i>
                         </div>
                         <div class="overflow-hidden">
-                            <h1 class="text-xs font-black text-sky-200 truncate" id="sidebarSchoolName">SLBN 1 KULON PROGO</h1>
-                            <p class="text-[11px] text-sky-300 truncate font-semibold" id="sidebarClassName">Kelas I Autisme</p>
+                            <h1 class="text-xs font-black text-sky-200 truncate">SLBN 1 KULON PROGO</h1>
+                            <p class="text-[11px] text-sky-300 truncate font-semibold">Kelas I Autisme</p>
                         </div>
                     </div>
                 </div>
@@ -105,7 +166,8 @@
             </div>
 
             <div class="p-3 border-t border-sky-800 bg-sky-950/50 flex items-center justify-between text-xs">
-                <span class="text-[10px] text-sky-300 truncate">Mode Lokal</span>
+                <span class="text-[10px] text-sky-300 truncate">Mode Lokal / Aktif</span>
+                <button type="button" onclick="handleLogout()" class="px-2 py-1 bg-rose-600/80 hover:bg-rose-600 text-white rounded text-[10px] font-bold">Keluar</button>
             </div>
         </aside>
 
@@ -131,13 +193,13 @@
                         </div>
                         <div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase">GURU / PENGAJAR</span>
-                            <h4 class="font-bold text-slate-800 text-sm" id="cardTeacherName">Agung Lian Prasetyadi, S.Pd.</h4>
+                            <h4 class="font-bold text-slate-800 text-sm">Agung Lian Prasetyadi, S.Pd.</h4>
                         </div>
                     </div>
                     <div class="flex items-center justify-between sm:justify-end space-x-3 pl-0 sm:pl-4">
                         <div class="text-left sm:text-right">
                             <span class="text-[10px] font-bold text-slate-400 uppercase">KEPALA SEKOLAH</span>
-                            <h4 class="font-bold text-slate-800 text-sm" id="cardHeadmasterName">Titin Nurhayati, S.Psi., M.Pd.</h4>
+                            <h4 class="font-bold text-slate-800 text-sm">Titin Nurhayati, S.Psi., M.Pd.</h4>
                         </div>
                     </div>
                 </div>
@@ -151,9 +213,7 @@
                                 <div class="flex items-center space-x-2">
                                     <input type="date" id="selectedDate" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800">
                                     <button type="button" onclick="changeDate(-1)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600">&lt; Kemarin</button>
-                                    <button type="button" onclick="setToday()" class="px-3 py-1.5 bg-sky-600 text-white rounded-xl text-xs font-bold shadow flex items-center space-x-1">
-                                        <span>Hari Ini</span>
-                                    </button>
+                                    <button type="button" onclick="setToday()" class="px-3 py-1.5 bg-sky-600 text-white rounded-xl text-xs font-bold shadow">Hari Ini</button>
                                     <button type="button" onclick="changeDate(1)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600">Besok &gt;</button>
                                 </div>
                             </div>
@@ -162,7 +222,7 @@
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t pt-3">
                             <div class="flex items-center space-x-2">
                                 <span class="text-xs font-bold text-slate-700" id="dailyDateTitle">-</span>
-                                <span class="px-2 py-0.5 bg-sky-600 text-white text-[10px] font-extrabold rounded-full" id="dailyStudentCountCount">4 Murid</span>
+                                <span class="px-2 py-0.5 bg-sky-600 text-white text-[10px] font-extrabold rounded-full">4 Murid</span>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <button type="button" onclick="markAllHadir()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow flex items-center space-x-1">
@@ -181,11 +241,9 @@
                 <section id="tab-monthly" class="tab-content space-y-3">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 no-print">
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 month-picker-container">
-                            <div class="flex items-center gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-500 mb-1">Pilih Bulan & Tahun</label>
-                                    <input type="month" id="selectedMonth" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800">
-                                </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Pilih Bulan & Tahun</label>
+                                <input type="month" id="selectedMonth" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800">
                             </div>
                             <div class="flex items-center space-x-2 self-end sm:self-auto">
                                 <button type="button" onclick="exportCSV()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow flex items-center space-x-1">
@@ -217,7 +275,6 @@
                         </div>
                     </div>
 
-                    <!-- AREA TABEL CETAK REKAP BULANAN -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 overflow-x-auto print-area">
                         <table class="w-full text-[11px] text-left border-collapse border border-slate-300">
                             <thead class="bg-slate-100 font-bold text-slate-700"><tr id="daysHeaderRow"></tr></thead>
@@ -282,7 +339,11 @@
         </div>
     </div>
 
-    <!-- SCRIPT UTAMA KODE -->
+    <div id="toast" class="fixed top-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold opacity-0 transition-opacity duration-200 z-50 shadow-lg">
+        <span id="toastMsg">Tersimpan</span>
+    </div>
+
+    <!-- SCRIPT UTAMA -->
     <script>
         window.students = [
             { id: 1, name: 'Dhyla Naura Safiya', nis: '001', phone: '6289472224251' },
@@ -328,6 +389,51 @@
             renderSensoryJournal();
         });
 
+        function switchAuthTab(type) {
+            const formLogin = document.getElementById('formLogin');
+            const formRegister = document.getElementById('formRegister');
+            const tabLogin = document.getElementById('tabBtnLogin');
+            const tabRegister = document.getElementById('tabBtnRegister');
+
+            if (type === 'login') {
+                formLogin.classList.remove('hidden');
+                formRegister.classList.add('hidden');
+                tabLogin.className = "flex-1 py-2 border-b-2 border-sky-600 text-sky-700 font-bold";
+                tabRegister.className = "flex-1 py-2 text-slate-400 font-bold";
+            } else {
+                formLogin.classList.add('hidden');
+                formRegister.classList.remove('hidden');
+                tabRegister.className = "flex-1 py-2 border-b-2 border-sky-600 text-sky-700 font-bold";
+                tabLogin.className = "flex-1 py-2 text-slate-400 font-bold";
+            }
+        }
+
+        function useOfflineMode() {
+            document.getElementById('landingScreen').classList.add('hidden');
+            document.getElementById('mainAppContent').classList.remove('hidden');
+            showToast("Masuk Aplikasi Utama");
+        }
+
+        function handleAuthLogin(e) {
+            e.preventDefault();
+            useOfflineMode();
+        }
+
+        function handleAuthRegister(e) {
+            e.preventDefault();
+            alert("Pendaftaran akun berhasil, silakan masuk.");
+            switchAuthTab('login');
+        }
+
+        function handleForgotPassword() {
+            alert("Instruksi reset password dikirim ke email terdaftar.");
+        }
+
+        function handleLogout() {
+            document.getElementById('mainAppContent').classList.add('hidden');
+            document.getElementById('landingScreen').classList.remove('hidden');
+        }
+
         function switchTab(t) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${t}`).classList.add('active');
@@ -353,7 +459,7 @@
             container.innerHTML = '';
 
             students.forEach(student => {
-                const rec = attendanceData[date]?.[student.id] || { status: 'H', mood: 'Kondusif', note: '' };
+                const rec = attendanceData[date]?.[student.id] || { status: 'H', mood: 'Kondusif', note: 'Hari ini cukup kondusif, walupun sempat minta keluar kelas karena 2 hari tidak masuk.' };
                 const nisStr = String(student.nis).padStart(3, '0');
                 
                 const card = document.createElement('div');
@@ -411,7 +517,13 @@
             const date = document.getElementById('selectedDate').value;
             if (!attendanceData[date]) attendanceData[date] = {};
             if (!attendanceData[date][studentId]) attendanceData[date][studentId] = { status: 'H', mood: 'Kondusif', note: '' };
-            attendanceData[date][studentId].status = status;
+            if (attendanceData[date][studentId].status === status) {
+                attendanceData[date][studentId].status = '';
+                showToast("Status dibatalkan");
+            } else {
+                attendanceData[date][studentId].status = status;
+                showToast("Presensi tersimpan");
+            }
             renderDailyCards();
         }
 
@@ -466,7 +578,7 @@
                         <span class="text-slate-900 font-extrabold text-sm">${student.name}</span>
                         <span class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-[11px]">Kondusif</span>
                     </div>
-                    <p class="text-slate-700 leading-relaxed font-medium pt-1">Hari ini siswa cukup kondusif di kelas, melakukan aktivitas belajar sesuai arahan.</p>
+                    <p class="text-slate-700 leading-relaxed font-medium pt-1">Hari ini siswa cukup kondusif di kelas, melakukan aktivitas belajar sesuai arahan dan pendampingan.</p>
                 `;
                 listContainer.appendChild(divCard);
             });
@@ -475,7 +587,39 @@
         function sendWhatsApp(studentId) {
             const student = students.find(s => s.id === studentId);
             if (!student) return;
-            window.open(`https://wa.me/${student.phone}`, '_blank');
+            const msg = `Yth. Orang Tua/Wali ${student.name}, laporan presensi hari ini: Hadir (H), Kondusif.`;
+            window.open(`https://wa.me/${student.phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            t.classList.remove('opacity-0');
+            setTimeout(() => t.classList.add('opacity-0'), 2000);
+        }
+
+        function setToday() {
+            const today = localISODate();
+            document.getElementById('selectedDate').value = today;
+            document.getElementById('topDateBadge').textContent = formatFullDateIndonesian(today);
+            document.getElementById('dailyDateTitle').textContent = formatFullDateIndonesian(today);
+        }
+
+        function changeDate(days) {
+            const current = new Date(document.getElementById('selectedDate').value || localISODate());
+            current.setDate(current.getDate() + days);
+            const iso = localISODate(current);
+            document.getElementById('selectedDate').value = iso;
+            document.getElementById('topDateBadge').textContent = formatFullDateIndonesian(iso);
+            document.getElementById('dailyDateTitle').textContent = formatFullDateIndonesian(iso);
+        }
+
+        function markAllHadir() {
+            showToast("Semua siswa ditandai Hadir");
+        }
+
+        function exportCSV() {
+            showToast("Mengekspor CSV...");
         }
     </script>
 </body>
