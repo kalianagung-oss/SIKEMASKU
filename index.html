@@ -40,21 +40,25 @@
             measurementId: "G-NLS6FVD5YL"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getDatabase(app);
 
-        window.fbAuth = auth;
-        window.fbDb = db;
-        window.fbRef = ref;
-        window.fbSet = set;
-        window.fbGet = get;
-        window.fbChild = child;
-        window.fbSignIn = signInWithEmailAndPassword;
-        window.fbSignUp = createUserWithEmailAndPassword;
-        window.fbSignOut = signOut;
-        window.fbOnAuth = onAuthStateChanged;
-        window.fbResetPass = sendPasswordResetEmail;
+            window.fbAuth = auth;
+            window.fbDb = db;
+            window.fbRef = ref;
+            window.fbSet = set;
+            window.fbGet = get;
+            window.fbChild = child;
+            window.fbSignIn = signInWithEmailAndPassword;
+            window.fbSignUp = createUserWithEmailAndPassword;
+            window.fbSignOut = signOut;
+            window.fbOnAuth = onAuthStateChanged;
+            window.fbResetPass = sendPasswordResetEmail;
+        } catch (e) {
+            console.warn("Firebase offline/gagal dimuat, beralih ke Mode Lokal.", e);
+        }
     </script>
 
     <style>
@@ -249,13 +253,13 @@
                         </div>
                         <div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase" id="cardRoleBadge">GURU / PENGAJAR</span>
-                            <h4 class="font-bold text-slate-800 text-sm" id="cardTeacherName">[Nama Pengguna]</h4>
+                            <h4 class="font-bold text-slate-800 text-sm" id="cardTeacherName">Agung Lian Prasetyadi, S.Pd</h4>
                         </div>
                     </div>
                     <div class="flex items-center justify-between sm:justify-end space-x-3 pl-0 sm:pl-4">
                         <div class="text-left sm:text-right">
                             <span class="text-[10px] font-bold text-slate-400 uppercase">KEPALA SEKOLAH</span>
-                            <h4 class="font-bold text-slate-800 text-sm" id="cardHeadmasterName">[Nama Kepala Sekolah]</h4>
+                            <h4 class="font-bold text-slate-800 text-sm" id="cardHeadmasterName">Titin Nurhayati, S.Psi., M.Pd</h4>
                         </div>
                     </div>
                 </div>
@@ -731,10 +735,10 @@
         function getDefaultConfig() {
             return { 
                 schoolName: 'SLBN 1 Kulon Progo', 
-                className: '[Nama Kelas / Mapel]', 
-                teacherName: '[Nama Pengguna]', 
+                className: 'Kelas III', 
+                teacherName: 'Agung Lian Prasetyadi, S.Pd', 
                 teacherNip: '',
-                headmasterName: '[Nama Kepala Sekolah]',
+                headmasterName: 'Titin Nurhayati, S.Psi., M.Pd',
                 headmasterNip: '',
                 customLogo: ''
             };
@@ -986,10 +990,10 @@
 
             try {
                 await window.fbResetPass(window.fbAuth, inputEmail);
-                alert(`Email tautan pemulihan (reset) password telah dikirimkan ke ${inputEmail}.\n\nSilakan periksa kotak masuk atau folder Spam email Anda.`);
+                alert(`Email reset password telah dikirimkan ke ${inputEmail}. Periksa Inbox/Spam.`);
             } catch (err) {
                 console.error("Gagal reset password:", err);
-                alert("Gagal mengirim email reset password. Pastikan alamat email sudah benar dan terdaftar.");
+                alert("Gagal mengirim email reset password. Pastikan alamat email sudah benar.");
             }
         }
 
@@ -1148,7 +1152,6 @@
                 renderDailyCards();
                 populateStudentFilter();
                 showToast(`${addedCount} murid baru berhasil ditambahkan!`);
-                alert(`Berhasil menambahkan ${addedCount} murid baru dari kelas sasaran!`);
             } else {
                 students = pulledStudents.map((st, idx) => ({
                     id: idx + 1,
@@ -1164,7 +1167,6 @@
                 renderDailyCards();
                 populateStudentFilter();
                 showToast(`Daftar murid diperbarui (${students.length} murid)!`);
-                alert(`Seluruh daftar murid Anda kini disinkronkan dengan kelas sasaran (${students.length} murid)!`);
             }
         }
 
@@ -1335,12 +1337,12 @@
 
             const targetUser = globalUsersDatabaseCache[uid];
             const cfg = targetUser.config || {};
-            const hmName = schoolConfig.teacherName || schoolConfig.headmasterName || '[Nama Kepala Sekolah]';
+            const hmName = schoolConfig.teacherName || schoolConfig.headmasterName || 'Titin Nurhayati, S.Psi., M.Pd';
             const hmNip = schoolConfig.headmasterNip ? `NIP. ${schoolConfig.headmasterNip}` : '';
 
-            const teacherName = cfg.teacherName || '[Nama Guru]';
+            const teacherName = cfg.teacherName || 'Agung Lian Prasetyadi, S.Pd';
             const teacherNip = cfg.teacherNip ? `NIP. ${cfg.teacherNip}` : '';
-            const classNameUpper = (cfg.className || '[KELAS]').toUpperCase();
+            const classNameUpper = (cfg.className || 'KELAS III').toUpperCase();
             const schoolNameUpper = (schoolConfig.schoolName || 'SLBN 1 KULON PROGO').toUpperCase();
             const formattedMonthText = formatMonthYearIndonesian(selectedMonthInput.value);
             const formattedPrintDate = formatPrintDateIndonesian(localISODate());
@@ -1379,7 +1381,9 @@
 
         async function forceReloadCloudData() {
             if (!currentUser) {
-                alert("Silakan login dengan akun Anda terlebih dahulu.");
+                showToast("Memuat data lokal...");
+                loadLocalCache();
+                renderDailyCards();
                 return;
             }
             showToast("Mengunduh data terbaru...");
@@ -1389,7 +1393,7 @@
 
         async function syncToFirebase(path, data) {
             saveLocalCache();
-            if (!currentUser) return;
+            if (!currentUser || !window.fbSet) return;
             try {
                 await window.fbSet(window.fbRef(window.fbDb, `users/${currentUser.uid}/${path}`), data);
             } catch(e) { console.error("Firebase sync error: ", e); }
@@ -1397,7 +1401,7 @@
 
         async function syncAllToFirebase() {
             saveLocalCache();
-            if (!currentUser) return;
+            if (!currentUser || !window.fbSet) return;
             try {
                 await window.fbSet(window.fbRef(window.fbDb, `users/${currentUser.uid}`), {
                     config: schoolConfig,
@@ -1407,7 +1411,7 @@
                 });
                 showToast("Tersimpan di Cloud!");
             } catch(e) {
-                alert("Gagal menyimpan ke Cloud. Pastikan koneksi internet aktif.");
+                showToast("Tersimpan secara Lokal");
             }
         }
 
@@ -1456,7 +1460,7 @@
                     renderSensoryJournal();
                     populateStudentFilter();
 
-                    alert(`BERHASIL DISINKRONKAN KE CLOUD!\nSekolah: ${schoolConfig.schoolName}\nTotal Siswa:${students.length} anak`);
+                    alert(`BERHASIL DISINKRONKAN!\nSekolah: ${schoolConfig.schoolName}\nTotal Siswa:${students.length} anak`);
                 } catch (err) { alert("Format JSON tidak sesuai: " + err.message); }
             };
             reader.readAsText(file);
@@ -1477,14 +1481,14 @@
 
         function applyConfigToDOM() {
             const schoolName = schoolConfig.schoolName || 'SLBN 1 Kulon Progo';
-            const className = schoolConfig.className || '[Nama Kelas / Mapel]';
-            const teacherName = schoolConfig.teacherName || '[Nama Pengguna]';
-            const headmasterName = schoolConfig.headmasterName || '[Nama Kepala Sekolah]';
+            const className = schoolConfig.className || 'Kelas III';
+            const teacherName = schoolConfig.teacherName || 'Agung Lian Prasetyadi, S.Pd';
+            const headmasterName = schoolConfig.headmasterName || 'Titin Nurhayati, S.Psi., M.Pd';
 
             const roleLabels = { 'GURU_KELAS': 'Guru Kelas', 'GURU_MAPEL': 'Guru Mapel', 'KEPALA_SEKOLAH': 'Kepala Sekolah' };
 
             document.getElementById('sidebarSchoolName').textContent = schoolName;
-            document.getElementById('sidebarClassName').textContent = `${roleLabels[currentUserRole]} -${className}`;
+            document.getElementById('sidebarClassName').textContent = `${roleLabels[currentUserRole] \vert{}\vert{} 'Guru'} -${className}`;
             
             document.getElementById('cardRoleBadge').textContent = roleLabels[currentUserRole] || 'GURU / PENGAJAR';
             document.getElementById('cardTeacherName').textContent = teacherName;
@@ -1591,7 +1595,7 @@
             document.getElementById('dailyStudentCountCount').textContent = `${filtered.length} Murid`;
 
             if (filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border border-dashed text-xs text-slate-400 space-y-2"><p class="font-bold text-slate-600">Tidak ada siswa pada kelompok ini.</p></div>`;
+                container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border border-dashed text-xs text-slate-400 space-y-2"><p class="font-bold text-slate-600">Belum ada siswa pada daftar/kelompok ini.</p><p>Tambahkan siswa melalui menu <b>Pengaturan & JSON</b> di samping.</p></div>`;
                 return;
             }
 
@@ -1662,8 +1666,8 @@
 
             const fullFormattedDate = formatFullDateIndonesian(dateStr);
             const schoolUpper = (schoolConfig.schoolName || 'SLBN 1 KULON PROGO').toUpperCase();
-            const className = schoolConfig.className || '[Nama Kelas / Mapel]';
-            const teacherName = schoolConfig.teacherName || '[Nama Guru / Pengajar]';
+            const className = schoolConfig.className || 'Kelas III';
+            const teacherName = schoolConfig.teacherName || 'Agung Lian Prasetyadi, S.Pd';
 
             let formattedNote = rec.note && rec.note.trim() !== '' ? `_${rec.note.trim()}_` : '-';
 
@@ -1677,7 +1681,6 @@
             window.open(phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
-        /* FUNGSI SAVE ATTENDANCE DENGAN LOGIKA TOGGLE (1x KLIK AKTIF, 2x KLIK BATAL) */
         function saveAttendance(studentId, status) {
             const date = selectedDateInput.value;
             if (!attendanceData[date]) attendanceData[date] = {};
@@ -1917,12 +1920,12 @@
         }
 
         function setupPrintData(type) {
-            const teacherName = schoolConfig.teacherName || '[Nama Pengguna]';
+            const teacherName = schoolConfig.teacherName || 'Agung Lian Prasetyadi, S.Pd';
             const teacherNip = schoolConfig.teacherNip ? `NIP. ${schoolConfig.teacherNip}` : '';
-            const hmName = schoolConfig.headmasterName || '[Nama Kepala Sekolah]';
+            const hmName = schoolConfig.headmasterName || 'Titin Nurhayati, S.Psi., M.Pd';
             const hmNip = schoolConfig.headmasterNip ? `NIP. ${schoolConfig.headmasterNip}` : '';
 
-            const classNameUpper = (schoolConfig.className || '[NAMA KELAS]').toUpperCase();
+            const classNameUpper = (schoolConfig.className || 'KELAS III').toUpperCase();
             const schoolNameUpper = (schoolConfig.schoolName || 'SLBN 1 KULON PROGO').toUpperCase();
             const formattedMonthText = formatMonthYearIndonesian(selectedMonthInput.value);
 
